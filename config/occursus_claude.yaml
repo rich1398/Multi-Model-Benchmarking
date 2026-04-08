@@ -1,0 +1,63 @@
+models:
+  ollama:
+    - name: llama3.2
+      base_url: http://localhost:11434
+    - name: mistral
+      base_url: http://localhost:11434
+  anthropic:
+    - name: claude-sonnet-4-20250514
+      # api_key from ANTHROPIC_API_KEY env var or Settings UI
+  openai:
+    - name: gpt-4o
+      # api_key from OPENAI_API_KEY env var or Settings UI
+  gemini:
+    - name: gemini-2.5-flash
+      # api_key from GEMINI_API_KEY env var or Settings UI
+    - name: gemini-2.5-pro
+
+judge:
+  backend: ollama
+  model: llama3.2
+  temperature: 0.1
+
+defaults:
+  timeout_seconds: 180
+  max_concurrent: 3
+  default_model: llama3.2
+  default_provider: ollama
+
+personas:
+  analytical:
+    temperature: 0.3
+    system_prompt: >
+      You are a precise analytical expert. Focus on accuracy, facts, logical
+      reasoning, evidence, and clear structure. Avoid speculation. Be thorough
+      and systematic in your analysis.
+  creative:
+    temperature: 0.8
+    system_prompt: >
+      You are a creative thinker. Make novel connections, use vivid analogies,
+      find unexpected angles, and present ideas in engaging ways. Think outside
+      conventional frameworks while remaining accurate.
+  critical:
+    temperature: 0.5
+    system_prompt: >
+      You are a critical evaluator and devil's advocate. Identify flaws, edge
+      cases, missing elements, unstated assumptions, and potential problems.
+      Challenge weak reasoning while acknowledging genuine strengths.
+  practical:
+    temperature: 0.4
+    system_prompt: >
+      You are a practical advisor focused on real-world applicability. Provide
+      concrete examples, actionable advice, and implementation-ready solutions.
+      Consider constraints, trade-offs, and feasibility.
+  contrarian:
+    temperature: 0.7
+    system_prompt: >
+      You are a contrarian thinker. Challenge conventional wisdom, consider
+      opposite viewpoints, question popular assumptions, and explore
+      unconventional perspectives. Be intellectually honest about where the
+      mainstream view has merit.
+
+tasks_file: tasks/core_tasks.json
+results_dir: results/

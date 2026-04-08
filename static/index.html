@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Occursus-Claude — Multi-LLM Benchmark</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Occursus-Claude</h1>
+    <p class="subtitle">Multi-LLM Synthesis Benchmark</p>
+  </header>
+
+  <main>
+    <!-- Settings Panel -->
+    <section id="settings-panel" class="panel">
+      <h2>Provider Settings</h2>
+      <div class="provider-grid">
+        <div class="provider-card">
+          <h4>Ollama (Local)</h4>
+          <label>Base URL</label>
+          <input type="text" id="setting-ollama-url" value="http://localhost:11434" />
+          <button class="btn-sm btn-test" data-provider="ollama">Test</button>
+          <span class="provider-status" id="status-ollama"></span>
+        </div>
+        <div class="provider-card">
+          <h4>OpenAI</h4>
+          <label>Base URL</label>
+          <input type="text" id="setting-openai-url" value="https://api.openai.com" />
+          <label>API Key</label>
+          <input type="password" id="setting-openai-key" placeholder="sk-..." />
+          <button class="btn-sm btn-test" data-provider="openai">Test</button>
+          <span class="provider-status" id="status-openai"></span>
+        </div>
+        <div class="provider-card">
+          <h4>Anthropic</h4>
+          <label>Base URL</label>
+          <input type="text" id="setting-anthropic-url" value="https://api.anthropic.com" />
+          <label>API Key</label>
+          <input type="password" id="setting-anthropic-key" placeholder="sk-ant-..." />
+          <button class="btn-sm btn-test" data-provider="anthropic">Test</button>
+          <span class="provider-status" id="status-anthropic"></span>
+        </div>
+        <div class="provider-card">
+          <h4>Google Gemini</h4>
+          <label>Base URL</label>
+          <input type="text" id="setting-gemini-url" value="https://generativelanguage.googleapis.com" />
+          <label>API Key</label>
+          <input type="password" id="setting-gemini-key" placeholder="AIza..." />
+          <button class="btn-sm btn-test" data-provider="gemini">Test</button>
+          <span class="provider-status" id="status-gemini"></span>
+        </div>
+      </div>
+      <div class="settings-controls">
+        <button id="btn-save-settings" class="btn-primary">Save Settings</button>
+        <span id="settings-save-status"></span>
+      </div>
+    </section>
+
+    <!-- Config Panel -->
+    <section id="config-panel" class="panel">
+      <h2>Configuration</h2>
+      <div class="config-grid">
+        <div class="config-group">
+          <label for="task-suite-select">Task Suite</label>
+          <select id="task-suite-select"><option>Loading...</option></select>
+        </div>
+        <div class="config-group">
+          <label for="custom-prompt">Ad-hoc Prompt (optional)</label>
+          <textarea id="custom-prompt" rows="3" placeholder="Enter a custom prompt to test..."></textarea>
+        </div>
+      </div>
+
+      <h3>Benchmark Models</h3>
+      <p class="hint">Toggle models on/off. Claude + GPT auto-judge (blind, scores averaged to 100). The tool auto-assigns model roles.</p>
+      <div id="model-toggles" class="model-toggle-grid"></div>
+      <div id="health-banner" class="health-banner">Checking model availability...</div>
+
+      <h3>Pipelines</h3>
+      <div id="pipeline-checkboxes" class="pipeline-grid"></div>
+
+      <h3>Tasks</h3>
+      <div id="task-checkboxes" class="task-grid"></div>
+
+      <div class="run-controls">
+        <button id="btn-run" class="btn-primary">Run Benchmark</button>
+        <button id="btn-stop" class="btn-danger" disabled>Stop</button>
+        <span id="progress-text"></span>
+      </div>
+      <div class="progress-bar-container">
+        <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+      </div>
+    </section>
+
+    <!-- Results Dashboard -->
+    <section id="results-panel" class="panel" style="display:none">
+      <h2>Results <span id="result-run-id"></span></h2>
+
+      <div id="thesis-banner" class="thesis-banner" style="display:none"></div>
+
+      <div class="chart-container">
+        <canvas id="score-chart"></canvas>
+      </div>
+
+      <div class="stats-row" id="stats-row"></div>
+
+      <h3>Score Matrix</h3>
+      <div class="table-wrapper">
+        <table id="score-table">
+          <thead><tr id="table-header"></tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="export-controls">
+        <button id="btn-export-csv" class="btn-sm">Export CSV</button>
+        <button id="btn-export-json" class="btn-sm">Export JSON</button>
+        <button id="btn-rerun-failed" class="btn-sm">Rerun Failed Cells</button>
+      </div>
+    </section>
+
+    <!-- History Panel -->
+    <section id="history-panel" class="panel">
+      <h2>History</h2>
+      <div id="history-list"></div>
+    </section>
+
+    <!-- Drill-down Modal -->
+    <div id="modal" class="modal" style="display:none">
+      <div class="modal-content">
+        <button class="modal-close" id="modal-close">&times;</button>
+        <h3 id="modal-title"></h3>
+        <div id="modal-body"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

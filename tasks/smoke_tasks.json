@@ -1,0 +1,37 @@
+[
+  {
+    "id": "S01_factual",
+    "prompt": "What is the capital of Australia?",
+    "rubric": "Must correctly state Canberra. One concise sentence or shorter.",
+    "category": "simple_factual",
+    "difficulty": "easy"
+  },
+  {
+    "id": "S02_explanation",
+    "prompt": "Explain the difference between a stack and a queue in one short paragraph.",
+    "rubric": "Must correctly describe LIFO vs FIFO and mention common operations for each.",
+    "category": "explanation",
+    "difficulty": "easy"
+  },
+  {
+    "id": "S03_code",
+    "prompt": "Write a Python function named is_even that returns True when an integer is even and False otherwise.",
+    "rubric": "Must be valid Python, return a bool, and correctly use modulo or equivalent logic.",
+    "category": "code_generation",
+    "difficulty": "easy"
+  },
+  {
+    "id": "S04_sql",
+    "prompt": "Write a SQL query to list the top 3 products by total revenue from a sales table with columns product_id, quantity, unit_price.",
+    "rubric": "Must use SUM(quantity * unit_price), GROUP BY product_id, ORDER BY revenue DESC, and LIMIT 3.",
+    "category": "sql",
+    "difficulty": "medium"
+  },
+  {
+    "id": "S05_json",
+    "prompt": "Return valid JSON only with keys status and priority for this ticket: 'Customer checkout intermittently fails in production.'",
+    "rubric": "Must return valid JSON only with both keys present. Priority should be high or equivalent.",
+    "category": "formatting",
+    "difficulty": "easy"
+  }
+]

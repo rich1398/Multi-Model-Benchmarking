@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.spec
+
+# Secrets and local config
+.env
+config/settings.local.json
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Results and data (user-generated)
+results/
+output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Misc
+*.docx

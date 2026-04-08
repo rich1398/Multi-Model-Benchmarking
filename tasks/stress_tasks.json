@@ -1,0 +1,58 @@
+[
+  {
+    "id": "X01_debugging",
+    "prompt": "A Python API endpoint is timing out intermittently under load. Describe a step-by-step debugging plan that distinguishes between CPU bottlenecks, database contention, network latency, and thread exhaustion. End with the first 3 actions you would take today.",
+    "rubric": "Must distinguish multiple failure classes, include observability and measurement, and finish with 3 concrete immediate actions.",
+    "category": "debugging",
+    "difficulty": "hard"
+  },
+  {
+    "id": "X02_architecture",
+    "prompt": "Design a migration plan from a monolith to a modular monolith for a SaaS product used by 40,000 monthly active users. Cover boundaries, deployment risk reduction, rollback strategy, and how to measure whether the migration is actually helping.",
+    "rubric": "Must propose a staged plan, explicit module boundaries, rollback mechanisms, and measurable success criteria.",
+    "category": "architecture",
+    "difficulty": "hard"
+  },
+  {
+    "id": "X03_reasoning",
+    "prompt": "A warehouse robot can move north, south, east, or west one unit per minute. It starts at (0,0), must visit shelves at (2,1), (5,1), and (5,4), and must return to (0,0). What is the shortest total path length, and give one optimal route.",
+    "rubric": "Must compute the correct shortest distance and provide a valid route that visits all required points and returns to origin.",
+    "category": "reasoning",
+    "difficulty": "hard"
+  },
+  {
+    "id": "X04_code_review",
+    "prompt": "Review this function conceptually: it caches user permissions in memory forever after first lookup, with no invalidation and no tenant scoping. Identify the likely bugs and operational risks, then propose a safer design.",
+    "rubric": "Must mention stale permissions, cross-tenant leakage risk, invalidation, memory growth, and a safer scoped caching approach.",
+    "category": "security_review",
+    "difficulty": "hard"
+  },
+  {
+    "id": "X05_summarization",
+    "prompt": "Summarize the following in exactly 4 bullet points, each under 14 words: 'The migration occurs in three stages. First, services move behind a compatibility layer. Second, schema changes are dual-written and validated. Third, traffic shifts gradually while rollback and monitoring remain active. Success depends on observability, rehearsed rollback, and explicit ownership of every dependency.'",
+    "rubric": "Exactly 4 bullets. Each bullet under 14 words. Must preserve the three stages plus the critical success condition.",
+    "category": "summarization",
+    "difficulty": "hard"
+  },
+  {
+    "id": "X06_policy",
+    "prompt": "Give the strongest arguments for and against requiring employees to return to the office three days per week, then recommend a policy for a distributed software company with declining coordination quality but strong hiring outcomes.",
+    "rubric": "Must argue both sides fairly, address coordination and hiring trade-offs, and give a recommendation tailored to the stated company context.",
+    "category": "policy",
+    "difficulty": "hard"
+  },
+  {
+    "id": "X07_sql_debug",
+    "prompt": "A query intended to show monthly revenue by region is double-counting rows after joining orders to order_items and promotions. Explain the likely cause and provide a corrected SQL strategy.",
+    "rubric": "Must identify fan-out or join multiplicity as the root issue and propose a corrected aggregation strategy.",
+    "category": "sql_debugging",
+    "difficulty": "hard"
+  },
+  {
+    "id": "X08_planning",
+    "prompt": "Create a 6-week delivery plan for launching a benchmarking platform MVP. Include milestones, risk owners, explicit acceptance criteria, and how you would keep the project honest if benchmark results start contradicting the thesis.",
+    "rubric": "Must include a week-by-week plan, named ownership areas, acceptance criteria, and a mechanism for dealing with thesis-invalidating results.",
+    "category": "planning",
+    "difficulty": "hard"
+  }
+]

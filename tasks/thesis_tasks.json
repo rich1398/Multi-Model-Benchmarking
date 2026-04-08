@@ -1,0 +1,58 @@
+[
+  {
+    "id": "T01_cross_domain",
+    "prompt": "Design a theoretical biological mechanism for a silicon-based organism to achieve cellular respiration in a methane-heavy atmosphere at -180°C (Titan-like conditions). Provide: (1) the chemical equations for energy transfer using methane as the primary substrate, (2) the theoretical energy yield per mole of methane compared to glucose-based respiration, (3) what structural proteins would need to be replaced and why, and (4) whether such an organism could realistically evolve given thermodynamic constraints.",
+    "rubric": "Must provide balanced methane oxidation equations, calculate energy yields with actual numbers, explain why carbon-silicon biochemistry changes protein folding, and address thermodynamic feasibility. Partial credit for getting chemistry right but biology wrong or vice versa. Single-domain answers that ignore either biology or chemistry should score below 60.",
+    "category": "cross_domain_synthesis",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T02_cross_domain",
+    "prompt": "A hospital wants to use reinforcement learning to optimize nurse scheduling across 3 wards. Design the system considering: (1) the RL formulation (state space, action space, reward function), (2) the legal constraints from labor law (maximum consecutive hours, mandatory rest periods, overtime rules), (3) the fairness constraints (no nurse should consistently get undesirable shifts), and (4) a realistic training strategy given that you cannot experiment on real hospital schedules. Provide the mathematical formulation.",
+    "rubric": "Must formalize the RL problem correctly (MDP components), incorporate specific legal constraints as hard boundaries not soft penalties, address fairness formally (not just mention it), and propose simulation-based training. Missing any domain (RL, law, healthcare operations, fairness) should score below 65.",
+    "category": "cross_domain_synthesis",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T03_code_refactor",
+    "prompt": "Here are three Python files from a Flask application:\n\n```python\n# routes.py\nfrom flask import Flask, jsonify, request\nimport jwt, sqlite3, hashlib\n\napp = Flask(__name__)\nSECRET = 'mysecret123'\nDB = 'app.db'\n\ndef get_db():\n    conn = sqlite3.connect(DB)\n    return conn\n\n@app.route('/login', methods=['POST'])\ndef login():\n    data = request.json\n    conn = get_db()\n    user = conn.execute(f\"SELECT * FROM users WHERE email='{data['email']}' AND password='{hashlib.md5(data['password'].encode()).hexdigest()}'\").fetchone()\n    conn.close()\n    if user:\n        token = jwt.encode({'user_id': user[0]}, SECRET)\n        return jsonify({'token': token})\n    return jsonify({'error': 'Invalid'}), 401\n\n@app.route('/api/items', methods=['GET'])\ndef get_items():\n    token = request.headers.get('Authorization', '').replace('Bearer ', '')\n    try:\n        payload = jwt.decode(token, SECRET, algorithms=['HS256'])\n    except:\n        return jsonify({'error': 'Unauthorized'}), 401\n    conn = get_db()\n    items = conn.execute('SELECT * FROM items WHERE user_id=?', (payload['user_id'],)).fetchall()\n    conn.close()\n    return jsonify({'items': [{'id': i[0], 'name': i[1], 'price': i[2]} for i in items]})\n```\n\nRefactor this to FastAPI with: (1) async database calls using aiosqlite, (2) replace JWT+MD5 with OAuth2 password bearer + bcrypt, (3) add proper input validation with Pydantic models, (4) fix ALL security vulnerabilities you can find, (5) maintain the exact same JSON response structure for both endpoints. Provide the complete refactored code.",
+    "rubric": "Must fix SQL injection in login, replace MD5 with bcrypt, implement OAuth2PasswordBearer correctly, use aiosqlite with async/await, add Pydantic request/response models, and preserve the exact JSON structure ({token}, {items: [{id, name, price}]}). Missing any of the 6 requirements should lose 15 points each. Code must be syntactically valid Python.",
+    "category": "code_refactoring",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T04_constraints",
+    "prompt": "Write a 300-word debate between Aristotle and Elon Musk about whether space colonization is a moral imperative. Hard constraints that MUST ALL be satisfied: (1) Neither speaker may use any word containing the letter 'z'. (2) Aristotle must reference exactly 2 of his own philosophical works by name. (3) Elon Musk must cite exactly 1 specific statistic about Mars. (4) The debate must contain exactly 3 rhetorical questions total (marked with '?'). (5) The final sentence must be exactly 10 words long. (6) Word count must be between 280 and 320 words.",
+    "rubric": "Each constraint is worth ~16 points. Check: no 'z' words (scan every word), exactly 2 Aristotle works cited by name, exactly 1 Mars statistic from Musk, exactly 3 question marks in the full text, final sentence exactly 10 words, total word count 280-320. Violating any constraint loses its full 16 points. Content quality of the debate accounts for remaining points.",
+    "category": "constraint_satisfaction",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T05_constraints",
+    "prompt": "Write a product launch email for a new AI coding assistant. Hard constraints: (1) Exactly 5 paragraphs. (2) Each paragraph must start with a letter that spells 'CRAFT' acrostically (C, R, A, F, T). (3) Total length between 200-250 words. (4) Must include exactly 3 bullet points in the third paragraph. (5) No sentence may exceed 20 words. (6) Must mention the price '$29/month' exactly once. (7) Must end with a call-to-action URL formatted as [text](url).",
+    "rubric": "7 constraints, each worth ~13 points. Check all mechanically: 5 paragraphs starting with C/R/A/F/T, 200-250 words, exactly 3 bullets in paragraph 3, no sentence over 20 words, '$29/month' appears exactly once, ends with markdown link. Remaining points for email quality and persuasiveness.",
+    "category": "constraint_satisfaction",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T06_needle",
+    "prompt": "Here are quarterly reports from fictional company NovaTech:\n\nQ1: Revenue $12.4M (up 8% YoY), COGS $7.2M, R&D $2.1M. Supply chain: 'vendor Alpha delivered 98% on-time.' Headcount: 145.\n\nQ2: Revenue $13.1M (up 11% YoY), COGS $7.8M, R&D $2.3M. Supply chain: 'vendor Alpha delivered 94% on-time, causing $340K in expediting costs.' Headcount: 152.\n\nQ3: Revenue $11.9M (down 3% YoY), COGS $8.1M, R&D $2.0M. Supply chain: 'vendor Alpha delivered 99% on-time.' Headcount: 148. Note: '$1.2M one-time restructuring charge included in COGS.'\n\nQ4: Revenue $14.2M (up 15% YoY), COGS $8.5M, R&D $2.4M. Supply chain: 'vendor Beta replaced Alpha; delivered 97% on-time.' Headcount: 160.\n\nQ1 (next year): Revenue $13.8M (up 11% YoY from prior Q1), COGS $7.9M, R&D $2.6M. Supply chain: 'vendor Beta delivered 91% on-time, causing $520K in expediting costs.' Headcount: 158.\n\nTasks: (1) Calculate the trailing 4-quarter EBITDA as of the most recent quarter (assume D&A is 5% of revenue). (2) Identify which two consecutive quarters show a contradictory supply chain narrative and explain the discrepancy. (3) Calculate the true gross margin trend after removing the Q3 restructuring charge. (4) Should NovaTech switch back to vendor Alpha? Justify with data.",
+    "rubric": "EBITDA calculation must correctly sum 4 quarters of (Revenue - COGS - R&D + D&A). Must identify Q2→Q3 contradiction (Alpha went from 94% to 99% but was replaced anyway in Q4). Gross margin must exclude the $1.2M restructuring. Vendor recommendation must cite specific on-time delivery rates and expediting costs. Arithmetic errors lose 20 points each.",
+    "category": "needle_in_haystack",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T07_needle",
+    "prompt": "Three engineers wrote conflicting post-mortems for the same outage:\n\nEngineer A: 'Root cause was a memory leak in the cache service introduced in commit abc123 on March 3. The service hit OOM at 14:32 UTC after 6 hours of gradual degradation. Mitigation: rolled back to previous version at 15:15 UTC.'\n\nEngineer B: 'Root cause was a configuration change to the load balancer at 14:00 UTC on March 3 that sent 100% of traffic to a single node. The node ran out of connections at 14:32 UTC. Mitigation: reverted LB config at 14:45 UTC, full recovery by 15:00 UTC.'\n\nEngineer C: 'Root cause was a dependency update in commit def456 on March 2 that changed the connection pool default from 100 to 10. Combined with normal traffic patterns, connections exhausted at 14:32 UTC on March 3. Mitigation: hotfix deployed at 15:15 UTC increasing pool size to 200.'\n\nTasks: (1) Identify which parts of each post-mortem are likely true vs. fabricated based on internal consistency. (2) Construct the most probable actual sequence of events. (3) Write a unified post-mortem that reconciles all three accounts. (4) Identify what monitoring would have caught this earlier.",
+    "rubric": "Must note that all three agree on 14:32 UTC failure time (likely true). Must identify that B's 'full recovery by 15:00' contradicts A and C's '15:15 mitigation'. Must construct a plausible timeline combining contributing factors. Unified post-mortem must acknowledge multiple contributing causes. Monitoring suggestions must be specific (not generic 'add monitoring').",
+    "category": "needle_in_haystack",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T08_multi_step",
+    "prompt": "Design a complete rate limiter for a multi-tenant SaaS API that must handle: (1) Per-tenant limits (1000 req/min default, configurable per plan). (2) Per-endpoint limits (some endpoints cost 10x). (3) Burst allowance (allow 2x limit for 5 seconds). (4) Distributed deployment across 4 regions with eventual consistency. (5) Graceful degradation when Redis is down. (6) Cost tracking that maps API calls to billing. Provide: the data model, the algorithm pseudocode, the Redis key schema, the HTTP response headers, and the billing integration approach.",
+    "rubric": "Must address all 6 requirements explicitly. Data model must handle tenant+endpoint+region dimensions. Algorithm must implement token bucket or sliding window correctly. Redis schema must handle distributed counting. Must specify standard rate limit headers (X-RateLimit-Limit, Remaining, Reset). Billing integration must be eventually consistent. Missing any requirement loses ~15 points.",
+    "category": "system_design",
+    "difficulty": "hard"
+  }
+]

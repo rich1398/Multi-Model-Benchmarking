@@ -1,0 +1,86 @@
+[
+  {
+    "id": "C01_factual",
+    "prompt": "What is the capital of Australia?",
+    "rubric": "Must correctly state Canberra. Clear, concise, unambiguous. Should not say Sydney or Melbourne.",
+    "category": "simple_factual",
+    "difficulty": "easy"
+  },
+  {
+    "id": "C02_explanation",
+    "prompt": "Explain the difference between a stack and a queue data structure. Include when you would use each one.",
+    "rubric": "Correctly describes LIFO vs FIFO. Mentions push/pop for stack and enqueue/dequeue for queue. Provides at least one practical use case for each. Clear and well-structured.",
+    "category": "explanation",
+    "difficulty": "easy"
+  },
+  {
+    "id": "C03_code",
+    "prompt": "Write a Python function called is_palindrome that takes a string and returns True if it reads the same forwards and backwards, ignoring case and spaces.",
+    "rubric": "Function signature correct. Handles case insensitivity and spaces. Works for edge cases like empty string and single character. Code is clean and Pythonic.",
+    "category": "code_generation",
+    "difficulty": "medium"
+  },
+  {
+    "id": "C04_sql",
+    "prompt": "Write a SQL query to find the top 5 customers by total order value from an orders table with columns: customer_id, order_date, amount. Include the customer_id and their total.",
+    "rubric": "Uses GROUP BY customer_id. Uses SUM(amount). Uses ORDER BY total DESC. Uses LIMIT 5. Uses a clear alias for the total.",
+    "category": "sql",
+    "difficulty": "medium"
+  },
+  {
+    "id": "C05_analysis",
+    "prompt": "Compare microservices vs monolith architecture for a startup with a team of 5 developers building an e-commerce platform. List pros and cons of each and make a recommendation with justification.",
+    "rubric": "Lists at least 3 pros and 3 cons for each. Considers team size, deployment complexity, scaling, and development speed. Makes a clear recommendation tied to the startup context.",
+    "category": "complex_analysis",
+    "difficulty": "hard"
+  },
+  {
+    "id": "C06_reasoning",
+    "prompt": "A farmer has 100 metres of fencing and wants to enclose a rectangular area along a river, so one side needs no fencing. What dimensions maximise the enclosed area? Show your work.",
+    "rubric": "Correctly uses 2w + l = 100, derives A = w(100 - 2w), and concludes width 25m and length 50m with a maximum area of 1250 square metres.",
+    "category": "reasoning",
+    "difficulty": "medium"
+  },
+  {
+    "id": "C07_creative",
+    "prompt": "Write a compelling opening paragraph for a science fiction novel about consciousness uploading. The paragraph should hook the reader and establish tone.",
+    "rubric": "Strong hook in the first sentence. Establishes a sci-fi tone and setting. Introduces consciousness uploading naturally. Uses concrete imagery and strong prose.",
+    "category": "creative_writing",
+    "difficulty": "medium"
+  },
+  {
+    "id": "C08_nuanced",
+    "prompt": "What are the strongest arguments for and against universal basic income? Present both sides fairly.",
+    "rubric": "At least 3 strong arguments for UBI and 3 strong arguments against it. Fair and balanced presentation. Acknowledges nuance and trade-offs.",
+    "category": "nuanced",
+    "difficulty": "hard"
+  },
+  {
+    "id": "C09_multistep",
+    "prompt": "Plan a 3-day itinerary for Tokyo for someone who loves food and history. Include specific restaurant and site recommendations with brief explanations of why each is worth visiting.",
+    "rubric": "Covers 3 distinct days. Includes at least 3 specific restaurant names and 3 specific historical sites. Uses logical geographic grouping and practical sequencing.",
+    "category": "multi_step",
+    "difficulty": "hard"
+  },
+  {
+    "id": "C10_adversarial",
+    "prompt": "Is it true that goldfish have a 3-second memory?",
+    "rubric": "Correctly identifies this as a myth. States that goldfish can remember for much longer than 3 seconds. Clear and direct correction.",
+    "category": "adversarial",
+    "difficulty": "easy"
+  },
+  {
+    "id": "C11_security",
+    "prompt": "Review this code for a security issue: query = \"SELECT * FROM users WHERE email = '\" + email + \"'\". Name the vulnerability and show a safer replacement.",
+    "rubric": "Must identify SQL injection and recommend parameterized queries or prepared statements with a safer code example.",
+    "category": "security_review",
+    "difficulty": "medium"
+  },
+  {
+    "id": "C12_json",
+    "prompt": "Return valid JSON only with keys status and priority for this ticket: 'Customer checkout intermittently fails in production for paid users.'",
+    "rubric": "Must return valid JSON only. status should indicate an open problem. priority should be high or equivalent.",
+    "category": "formatting",
+    "difficulty": "easy"
+  }
+]

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "T01_factual",
+    "prompt": "What is the capital of Australia?",
+    "rubric": "Must correctly state Canberra. Clear, concise, unambiguous. Should not say Sydney or Melbourne.",
+    "category": "simple_factual",
+    "difficulty": "easy"
+  },
+  {
+    "id": "T02_explanation",
+    "prompt": "Explain the difference between a stack and a queue data structure. Include when you would use each one.",
+    "rubric": "Correctly describes LIFO vs FIFO. Mentions push/pop for stack and enqueue/dequeue for queue. Provides at least one practical use case for each. Clear and well-structured.",
+    "category": "explanation",
+    "difficulty": "easy"
+  },
+  {
+    "id": "T03_code",
+    "prompt": "Write a Python function called is_palindrome that takes a string and returns True if it reads the same forwards and backwards, ignoring case and spaces.",
+    "rubric": "Function signature correct (takes string, returns bool). Handles case insensitivity. Handles spaces. Works for edge cases like empty string and single character. Code is clean and Pythonic.",
+    "category": "code_generation",
+    "difficulty": "medium"
+  },
+  {
+    "id": "T04_sql",
+    "prompt": "Write a SQL query to find the top 5 customers by total order value from an orders table with columns: customer_id, order_date, amount. Include the customer_id and their total.",
+    "rubric": "Uses GROUP BY customer_id. Uses SUM(amount) for total. Uses ORDER BY total DESC. Uses LIMIT 5. Correct SQL syntax. Aliases total column clearly. Query would actually execute correctly.",
+    "category": "sql",
+    "difficulty": "medium"
+  },
+  {
+    "id": "T05_analysis",
+    "prompt": "Compare microservices vs monolith architecture for a startup with a team of 5 developers building an e-commerce platform. List pros and cons of each and make a recommendation with justification.",
+    "rubric": "Lists at least 3 pros and 3 cons for each architecture. Considers team size as a factor. Discusses deployment complexity, scaling, and development speed. Makes a clear recommendation with reasoning tied to the startup context. Balanced analysis, not blindly pro-microservices.",
+    "category": "complex_analysis",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T06_reasoning",
+    "prompt": "A farmer has 100 metres of fencing and wants to enclose a rectangular area along a river (one side needs no fencing). What dimensions maximise the enclosed area? Show your work.",
+    "rubric": "Correctly identifies that 3 sides need fencing (2 widths + 1 length). Sets up the constraint equation (2w + l = 100). Derives area formula (A = w * (100 - 2w)). Finds maximum via calculus or completing the square. Correct answer: width = 25m, length = 50m, area = 1250 sq m. Shows clear working.",
+    "category": "reasoning",
+    "difficulty": "medium"
+  },
+  {
+    "id": "T07_creative",
+    "prompt": "Write a compelling opening paragraph for a science fiction novel about consciousness uploading. The paragraph should hook the reader and establish tone.",
+    "rubric": "Strong hook in the first sentence. Establishes a sci-fi tone and setting. Introduces the concept of consciousness uploading naturally. Shows (not tells) — uses concrete sensory details. Compelling enough to make the reader want to continue. Good prose quality.",
+    "category": "creative_writing",
+    "difficulty": "medium"
+  },
+  {
+    "id": "T08_nuanced",
+    "prompt": "What are the strongest arguments for and against universal basic income? Present both sides fairly.",
+    "rubric": "At least 3 strong arguments for UBI (e.g., poverty reduction, automation safety net, bureaucracy reduction). At least 3 strong arguments against (e.g., inflation risk, work disincentive, fiscal cost). Arguments are specific and evidence-aware, not generic. Fair and balanced presentation without obvious bias. Acknowledges nuance and complexity.",
+    "category": "nuanced",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T09_multistep",
+    "prompt": "Plan a 3-day itinerary for Tokyo for someone who loves food and history. Include specific restaurant and site recommendations with brief explanations of why each is worth visiting.",
+    "rubric": "Covers 3 distinct days with clear structure. Includes at least 3 specific restaurant names (not generic). Includes at least 3 specific historical sites. Brief but informative descriptions of each recommendation. Logical geographic grouping (not zigzagging across the city). Practical and actionable.",
+    "category": "multi_step",
+    "difficulty": "hard"
+  },
+  {
+    "id": "T10_adversarial",
+    "prompt": "Is it true that goldfish have a 3-second memory?",
+    "rubric": "Correctly identifies this as a myth. States goldfish can remember for months (research shows weeks to months). Cites or references actual studies or experiments. Clear and direct correction. Does not perpetuate the misconception. Bonus: explains where the myth may have originated.",
+    "category": "adversarial",
+    "difficulty": "easy"
+  }
+]
