@@ -80,5 +80,17 @@ def _register_defaults() -> None:
     except ImportError:
         pass
 
+    try:
+        from pipelines.research import (
+            SelfMoAPipeline, AdaptiveDebatePipeline,
+            ReflexionPipeline, GraphMeshPipeline,
+        )
+        register_pipeline(SelfMoAPipeline())
+        register_pipeline(AdaptiveDebatePipeline())
+        register_pipeline(ReflexionPipeline())
+        register_pipeline(GraphMeshPipeline())
+    except ImportError:
+        pass
+
 
 _register_defaults()
