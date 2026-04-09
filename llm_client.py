@@ -54,6 +54,13 @@ def _headless_env() -> dict[str, str]:
     return env
 
 
+def _sub_timeout(prompt: str) -> int:
+    """Adaptive timeout for subscription CLI calls based on prompt length."""
+    base = 180  # 3 minutes minimum
+    extra = len(prompt) // 500 * 30  # +30s per ~500 chars of prompt
+    return min(base + extra, 600)  # cap at 10 minutes
+
+
 def _kill_tree(proc: subprocess.Popen) -> None:
     if sys.platform == "win32":
         try:
@@ -880,7 +887,7 @@ class LLMClient:
         cmd, use_shell = _build_cmd(claude_path, cmd_args)
         env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
         for attempt in range(3):
-            result = await self._run_cli(cmd, prompt, 120, "Claude (sub)", "claude_sub", env, use_shell=use_shell)
+            result = await self._run_cli(cmd, prompt, _sub_timeout(prompt), "Claude (sub)", "claude_sub", env, use_shell=use_shell)
             if result.ok or not any(p in (result.error or "").lower() for p in _BILLING_PATTERNS):
                 return result
             await asyncio.sleep(5)
@@ -897,7 +904,7 @@ class LLMClient:
         try:
             full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
             cmd, use_shell = _build_cmd(codex_path, ["exec", "-", "--sandbox", "read-only", "--ephemeral", "--skip-git-repo-check", "-o", outfile.name])
-            result = await self._run_cli(cmd, full_prompt, 120, "ChatGPT (sub)", "chatgpt_sub", _headless_env(), use_shell=use_shell)
+            result = await self._run_cli(cmd, full_prompt, _sub_timeout(full_prompt), "ChatGPT (sub)", "chatgpt_sub", _headless_env(), use_shell=use_shell)
             if result.ok and not result.text:
                 try:
                     with open(outfile.name, encoding="utf-8") as f:
@@ -925,7 +932,7 @@ class LLMClient:
             return LLMResponse(ok=False, error="gemini CLI not found in PATH", model="Gemini (sub)", provider="gemini_sub")
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         cmd, use_shell = _build_cmd(gemini_path, ["-p", "-", "--model", "gemini-2.5-flash", "--approval-mode", "plan", "--output-format", "text"])
-        return await self._run_cli(cmd, full_prompt, 120, "Gemini (sub)", "gemini_sub", _headless_env(), use_shell=use_shell)
+        return await self._run_cli(cmd, full_prompt, _sub_timeout(full_prompt), "Gemini (sub)", "gemini_sub", _headless_env(), use_shell=use_shell)
 
     async def check_subscription_health(self) -> dict[str, Any]:
         checks = {}

@@ -29,6 +29,7 @@ _client: LLMClient | None = None
 _active_runs: dict[str, dict] = {}
 _run_queues: dict[str, dict[str, asyncio.Queue]] = {}
 _cancel_events: dict[str, asyncio.Event] = {}
+_event_buffers: dict[str, list[dict]] = {}  # Replays recent events on SSE connect
 
 ROLE_MODEL_KEYS = (
     "generator",
@@ -484,6 +485,12 @@ async def api_stream(run_id: str):
 
     async def event_stream():
         try:
+            # Replay any buffered events so late-connecting clients see progress
+            for buffered in _event_buffers.get(run_id, []):
+                event_type = buffered.get("type", "progress")
+                if event_type != "done":
+                    yield f"event: {event_type}\ndata: {json.dumps(buffered)}\n\n"
+
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=30)
@@ -992,6 +999,12 @@ async def _run_benchmark(
 
 
 async def _broadcast(run_id: str, event: dict) -> None:
+    # Buffer the last 20 events for late-connecting SSE clients
+    buf = _event_buffers.setdefault(run_id, [])
+    buf.append(event)
+    if len(buf) > 20:
+        buf[:] = buf[-20:]
+
     queues = _run_queues.get(run_id, {})
     for q in queues.values():
         try:
