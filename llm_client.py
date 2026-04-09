@@ -74,6 +74,7 @@ class LLMClient:
             "anthropic": asyncio.Semaphore(max(1, config.max_concurrent)),
             "gemini": asyncio.Semaphore(1),
         }
+        self.subscription_mode: bool = getattr(config, "subscription_mode", False)
 
     async def generate(
         self,
@@ -89,7 +90,7 @@ class LLMClient:
         provider = provider or resolve_provider(model)
 
         # Subscription mode: redirect cloud providers to CLI
-        if getattr(self._config, "subscription_mode", False) and provider in ("anthropic", "openai", "gemini"):
+        if self.subscription_mode and provider in ("anthropic", "openai", "gemini"):
             sub_sem = self._provider_semaphores.get(provider, asyncio.Semaphore(1))
             async with sub_sem:
                 if provider == "anthropic":

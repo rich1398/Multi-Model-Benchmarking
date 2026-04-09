@@ -351,6 +351,7 @@ async def api_run(request: Request):
 
     config = _get_config()
     client = _get_client()
+    client.subscription_mode = subscription_mode
     run_config = replace(
         config,
         default_provider=primary_provider,
