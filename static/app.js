@@ -304,6 +304,7 @@ function setupEventListeners() {
   document.getElementById('task-suite-select').addEventListener('change', loadTasks);
 
   document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+  document.getElementById('btn-shutdown').addEventListener('click', shutdownServer);
   document.querySelectorAll('.btn-test').forEach((btn) => {
     btn.addEventListener('click', () => testProvider(btn.dataset.provider));
   });
@@ -451,6 +452,17 @@ function stopRun() {
   }
   state.activeRunId = null;
   resetRunButtons();
+}
+
+async function shutdownServer() {
+  if (!confirm('Shut down the Occursus Benchmark server? All running benchmarks will be cancelled.')) return;
+  try {
+    stopRun();
+    await fetch('/api/shutdown', { method: 'POST' });
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#888;font-size:1.5rem">Server stopped. You can close this tab.</div>';
+  } catch (e) {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#888;font-size:1.5rem">Server stopped. You can close this tab.</div>';
+  }
 }
 
 function resetRunButtons() {

@@ -150,6 +150,17 @@ async def index():
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+@app.post("/api/shutdown")
+async def api_shutdown():
+    """Cancel all active runs and shut down the server."""
+    for event in _cancel_events.values():
+        event.set()
+    import signal
+    import os
+    asyncio.get_event_loop().call_later(0.5, lambda: os.kill(os.getpid(), signal.SIGTERM))
+    return {"status": "shutting_down"}
+
+
 @app.get("/api/models")
 async def api_models():
     client = _get_client()

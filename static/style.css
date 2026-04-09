@@ -31,12 +31,31 @@ header {
   padding: 1.5rem 0 1rem;
   border-bottom: 1px solid var(--border);
   margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
 }
 
 h1 {
   font-size: 1.8rem;
   font-weight: 700;
   color: var(--accent);
+}
+
+.btn-shutdown {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.15s;
+}
+
+.btn-shutdown:hover {
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .subtitle { color: var(--text-dim); font-size: 0.9rem; }
