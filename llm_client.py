@@ -56,9 +56,9 @@ def _headless_env() -> dict[str, str]:
 
 def _sub_timeout(prompt: str) -> int:
     """Adaptive timeout for subscription CLI calls based on prompt length."""
-    base = 180  # 3 minutes minimum
+    base = 300  # 5 minutes minimum (thesis prompts need this)
     extra = len(prompt) // 500 * 30  # +30s per ~500 chars of prompt
-    return min(base + extra, 600)  # cap at 10 minutes
+    return min(base + extra, 900)  # cap at 15 minutes
 
 
 def _kill_tree(proc: subprocess.Popen) -> None:
@@ -95,6 +95,12 @@ class LLMClient:
             "anthropic": asyncio.Semaphore(max(1, config.max_concurrent)),
             "gemini": asyncio.Semaphore(1),
         }
+        # Subscription CLIs: 1 concurrent call per CLI, but all 3 CLIs can run in parallel
+        self._sub_semaphores: dict[str, asyncio.Semaphore] = {
+            "anthropic": asyncio.Semaphore(1),
+            "openai": asyncio.Semaphore(1),
+            "gemini": asyncio.Semaphore(1),
+        }
         self.subscription_mode: bool = getattr(config, "subscription_mode", False)
 
     async def generate(
@@ -111,8 +117,10 @@ class LLMClient:
         provider = provider or resolve_provider(model)
 
         # Subscription mode: redirect cloud providers to CLI
+        # Each CLI gets its own semaphore (1 at a time per CLI)
+        # but different CLIs run in parallel (no global semaphore)
         if self.subscription_mode and provider in ("anthropic", "openai", "gemini"):
-            sub_sem = self._provider_semaphores.get(provider, asyncio.Semaphore(1))
+            sub_sem = self._sub_semaphores.get(provider, asyncio.Semaphore(1))
             async with sub_sem:
                 if provider == "anthropic":
                     return await self._call_claude_sub(prompt, model, temperature, system_prompt)
