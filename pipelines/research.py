@@ -1,4 +1,4 @@
-"""Research-backed pipeline architectures for Occursus-Claude.
+"""Research-backed pipeline architectures for Occursus Benchmark.
 
 Self-MoA          — Princeton 2025 (arxiv.org/abs/2502.00674)
 Adaptive Debate   — A-HMAD 2025 (doi.org/10.1007/s44443-025-00353-3)
@@ -90,7 +90,7 @@ class SelfMoAPipeline(BasePipeline):
         # Force all layers to use the primary generator — no rotation
         best_model = self._role_model(config, model, "generator")
         steps: list[StepTrace] = []
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
 
         # Layer 1: 3 diverse samples from the SAME model
         await self._notify(progress_callback, "Self-MoA Layer 1: 3 temperature-diverse samples...")
@@ -198,7 +198,7 @@ class AdaptiveDebatePipeline(BasePipeline):
 
         # Step 1: Initial draft
         await self._notify(progress_callback, "A-HMAD: generating initial draft...")
-        draft = await client.generate(self.wrap_task(prompt), model=gen_model)
+        draft = await client.generate(self.wrap_task(prompt, cot=self._cot(config)), model=gen_model)
         steps.append(_trace("draft", draft))
         if not draft.ok:
             return _fail(self._ID, draft.error, tuple(steps))
@@ -307,13 +307,13 @@ class ReflexionPipeline(BasePipeline):
             )
             if reflection_memory:
                 gen_prompt = (
-                    f"{self.wrap_task(prompt)}\n\n"
+                    f"{self.wrap_task(prompt, cot=self._cot(config))}\n\n"
                     f"REFLECTION FROM PREVIOUS ATTEMPT:\n"
                     + "\n".join(reflection_memory)
                     + "\n\nUse these reflections to produce a better answer."
                 )
             else:
-                gen_prompt = self.wrap_task(prompt)
+                gen_prompt = self.wrap_task(prompt, cot=self._cot(config))
 
             resp = await client.generate(gen_prompt, model=gen_model)
             steps.append(_trace(f"attempt_{attempt}", resp))
@@ -426,7 +426,7 @@ class GraphMeshPipeline(BasePipeline):
             self._role_model(config, model, "reviewer", "synthesizer", "generator"),
         ]
         steps: list[StepTrace] = []
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
 
         # Round 0: independent initial generation
         await self._notify(progress_callback, "Graph-mesh round 0: independent generation...")

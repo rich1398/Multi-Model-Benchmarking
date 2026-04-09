@@ -1,4 +1,4 @@
-"""Multi-expert synthesis merge pipelines for Occursus-Claude."""
+"""Multi-expert synthesis merge pipelines for Occursus Benchmark."""
 
 from __future__ import annotations
 
@@ -125,7 +125,7 @@ class MergeFullPipeline(BasePipeline):
     ) -> PipelineResult:
         gen_model = self._role_model(config, model, "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
         personas = _get_personas(config)
 
         await self._notify(progress_callback, "Generating 3 expert perspectives...")
@@ -166,7 +166,7 @@ class CritiqueThenMergePipeline(BasePipeline):
         gen_model = self._role_model(config, model, "generator")
         critique_model = self._role_model(config, model, "critic", "reviewer", "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
         personas = _get_personas(config)
 
         # Phase 1: Expert generation
@@ -236,7 +236,7 @@ class RankedMergePipeline(BasePipeline):
         gen_model = self._role_model(config, model, "generator")
         judge_model = self._role_model(config, model, "judge", "reviewer", "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
         personas = _get_personas(config)
 
         # Phase 1: Expert generation

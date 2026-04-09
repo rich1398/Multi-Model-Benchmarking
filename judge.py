@@ -1,4 +1,4 @@
-"""LLM-as-judge scoring system for Occursus-Claude."""
+"""LLM-as-judge scoring system for Occursus Benchmark."""
 
 from __future__ import annotations
 

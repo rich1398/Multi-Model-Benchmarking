@@ -30,7 +30,7 @@ class SinglePipeline(BasePipeline):
         model = self._role_model(config, model, "generator")
         await self._notify(progress_callback, "Generating response...")
 
-        resp = await client.generate(self.wrap_task(prompt), model=model)
+        resp = await client.generate(self.wrap_task(prompt, cot=self._cot(config)), model=model)
 
         step = StepTrace(
             phase="generate",

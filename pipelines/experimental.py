@@ -1,4 +1,4 @@
-"""Experimental tier-5 pipelines for Occursus-Claude."""
+"""Experimental tier-5 pipelines for Occursus Benchmark."""
 
 from __future__ import annotations
 
@@ -173,7 +173,7 @@ class PersonaCouncilPipeline(BasePipeline):
     ) -> PipelineResult:
         gen_model = self._role_model(config, model, "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
-        task = self.wrap_task(prompt)
+        task = self.wrap_task(prompt, cot=self._cot(config))
         steps: list[StepTrace] = []
 
         # --- Phase 1: 7 persona responses in parallel ---------------------
@@ -373,7 +373,7 @@ class ReverseEngineerPipeline(BasePipeline):
     ) -> PipelineResult:
         gen_model = self._role_model(config, model, "generator")
         review_model = self._role_model(config, model, "reviewer", "critic", "generator")
-        task = self.wrap_task(prompt)
+        task = self.wrap_task(prompt, cot=self._cot(config))
         steps: list[StepTrace] = []
 
         # --- Phase 1: Generate initial answer -----------------------------
@@ -474,7 +474,7 @@ class TournamentPipeline(BasePipeline):
         gen_model = self._role_model(config, model, "generator")
         judge_model = self._role_model(config, model, "judge", "reviewer", "generator")
         polish_model = self._role_model(config, model, "synthesizer", "reviewer", "generator")
-        task = self.wrap_task(prompt)
+        task = self.wrap_task(prompt, cot=self._cot(config))
         steps: list[StepTrace] = []
 
         # --- Phase 1: Generate 8 responses in parallel --------------------

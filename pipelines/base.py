@@ -1,4 +1,4 @@
-"""Base pipeline interface for Occursus-Claude."""
+"""Base pipeline interface for Occursus Benchmark."""
 
 from __future__ import annotations
 
@@ -13,6 +13,11 @@ TASK_WRAPPER = (
     "Do not ask clarifying questions. Do not refuse. "
     "Give your best answer.\n\n"
     "TASK: {prompt}"
+)
+
+COT_PREFIX = (
+    "Think step by step. Show your reasoning process, then give "
+    "your final answer clearly marked with 'FINAL ANSWER:'.\n\n"
 )
 
 
@@ -33,8 +38,24 @@ class BasePipeline(ABC):
     ) -> PipelineResult:
         ...
 
-    def wrap_task(self, prompt: str) -> str:
-        return TASK_WRAPPER.format(prompt=prompt)
+    def wrap_task(self, prompt: str, *, cot: bool = False) -> str:
+        base = TASK_WRAPPER.format(prompt=prompt)
+        return f"{COT_PREFIX}{base}" if cot else base
+
+    def _cot(self, config: AppConfig) -> bool:
+        return getattr(config, "cot_enabled", False)
+
+    def _intermediate_tokens(self, config: AppConfig) -> int | None:
+        """Token limit for intermediate steps (None = no limit)."""
+        if not getattr(config, "token_budget_enabled", False):
+            return None
+        return int(getattr(config, "max_output_tokens", 4096) * 0.4)
+
+    def _final_tokens(self, config: AppConfig) -> int | None:
+        """Token limit for final synthesis step (None = no limit)."""
+        if not getattr(config, "token_budget_enabled", False):
+            return None
+        return int(getattr(config, "max_output_tokens", 4096) * 0.6)
 
     def _role_model(
         self,

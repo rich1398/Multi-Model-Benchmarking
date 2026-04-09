@@ -1,4 +1,4 @@
-"""Occursus-Claude — Multi-LLM Benchmarking Application."""
+"""Occursus Benchmark — Multi-LLM Benchmarking Application."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from role_assigner import auto_assign_roles
 from judge import judge_response
 from pipelines import get_pipeline, list_pipelines
 
-app = FastAPI(title="Occursus-Claude", version="0.1.0")
+app = FastAPI(title="Occursus Benchmark", version="1.0.0")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 _config: AppConfig | None = None
@@ -341,6 +341,14 @@ async def api_run(request: Request):
     if role_models_legacy:
         role_models.update(role_models_legacy)
 
+    # Parse enhancement toggles
+    subscription_mode = body.get("subscription_mode", False)
+    cot_enabled = body.get("cot_enabled", False)
+    token_budget_enabled = body.get("token_budget_enabled", False) and not subscription_mode
+    adaptive_temp_enabled = body.get("adaptive_temp_enabled", False) and not subscription_mode
+    repeat_count = max(1, min(5, int(body.get("repeat_count", 1))))
+    cost_tracking_enabled = body.get("cost_tracking_enabled", True)
+
     config = _get_config()
     client = _get_client()
     run_config = replace(
@@ -353,6 +361,12 @@ async def api_run(request: Request):
             model=judge_models[0]["model"],
             temperature=config.judge.temperature,
         ),
+        cot_enabled=cot_enabled,
+        token_budget_enabled=token_budget_enabled,
+        adaptive_temp_enabled=adaptive_temp_enabled,
+        repeat_count=repeat_count,
+        cost_tracking_enabled=cost_tracking_enabled,
+        subscription_mode=subscription_mode,
     )
 
     try:
@@ -764,38 +778,76 @@ async def _run_benchmark(
                     "message": msg,
                 })
 
-            try:
-                result = await pipeline.execute(
-                    task.prompt, client, config,
-                    model=model, progress_callback=progress_cb,
-                )
-            except Exception as e:
-                from models import PipelineResult
-                result = PipelineResult(
-                    pipeline_id=pid, ok=False, error=str(e),
-                )
+            # Adaptive temperature: classify task and override
+            task_temp = None
+            task_category = ""
+            if getattr(config, "adaptive_temp_enabled", False):
+                from task_classifier import classify_task
+                task_category, task_temp = classify_task(task.prompt)
+
+            # Repeat runs: execute N times, collect scores
+            repeat_count = max(1, getattr(config, "repeat_count", 1))
+            all_scores: list[int] = []
+            best_result = None
+            best_judge = None
+            best_score = -1
+
+            for rep in range(repeat_count):
+                if repeat_count > 1:
+                    await _broadcast(run_id, {
+                        "type": "progress",
+                        "task_id": task.id,
+                        "pipeline_id": pid,
+                        "message": f"Repeat {rep + 1}/{repeat_count}...",
+                    })
+
+                try:
+                    result = await pipeline.execute(
+                        task.prompt, client, config,
+                        model=model, progress_callback=progress_cb,
+                    )
+                except Exception as e:
+                    from models import PipelineResult
+                    result = PipelineResult(
+                        pipeline_id=pid, ok=False, error=str(e),
+                    )
+
+                if result.ok and result.final_text:
+                    if judge_models:
+                        from judge import dual_judge_response
+                        judge_result = await dual_judge_response(
+                            task.prompt, task.rubric, result.final_text,
+                            client, judge_models,
+                            temperature=config.judge.temperature,
+                        )
+                    else:
+                        judge_result = await judge_response(
+                            task.prompt, task.rubric, result.final_text,
+                            client, config,
+                        )
+                    rep_score = judge_result.score if judge_result.ok else 0
+                    all_scores.append(rep_score)
+                    if rep_score > best_score:
+                        best_score = rep_score
+                        best_result = result
+                        best_judge = judge_result
+                else:
+                    all_scores.append(0)
+                    if best_result is None:
+                        best_result = result
+
+            # Use best result across repeats
+            result = best_result or result  # type: ignore[possibly-undefined]
 
             wall_ms = (time.perf_counter() - start) * 1000
 
-            if result.ok and result.final_text:
-                if judge_models:
-                    from judge import dual_judge_response
-                    judge_result = await dual_judge_response(
-                        task.prompt, task.rubric, result.final_text,
-                        client, judge_models,
-                        temperature=config.judge.temperature,
-                    )
-                else:
-                    judge_result = await judge_response(
-                        task.prompt, task.rubric, result.final_text,
-                        client, config,
-                    )
-                score = judge_result.score if judge_result.ok else 0
-                judge_reasoning = judge_result.reasoning
-                judge_ok = judge_result.ok
-                judge_error = judge_result.error
-                judge_backend_value = judge_result.backend
-                judge_model_value = judge_result.model
+            if best_judge and best_judge.ok:
+                score = round(sum(all_scores) / len(all_scores)) if all_scores else 0
+                judge_reasoning = best_judge.reasoning
+                judge_ok = best_judge.ok
+                judge_error = best_judge.error
+                judge_backend_value = best_judge.backend
+                judge_model_value = best_judge.model
             else:
                 score = 0
                 judge_reasoning = f"Pipeline failed: {result.error}"
@@ -803,6 +855,22 @@ async def _run_benchmark(
                 judge_error = ""
                 judge_backend_value = config.judge.backend
                 judge_model_value = config.judge.model
+
+            # Cost tracking
+            est_cost = 0.0
+            if getattr(config, "cost_tracking_enabled", True):
+                from cost_tracker import estimate_call_cost
+                provider_name = resolve_provider(model or config.default_model)
+                est_cost = estimate_call_cost(
+                    provider_name, model or config.default_model,
+                    result.total_tokens // 2, result.total_tokens // 2,
+                )
+
+            # Score statistics for repeat runs
+            score_std = 0.0
+            if len(all_scores) > 1:
+                mean = sum(all_scores) / len(all_scores)
+                score_std = round((sum((s - mean) ** 2 for s in all_scores) / len(all_scores)) ** 0.5, 1)
 
             entry = {
                 "task_id": task.id,
@@ -820,7 +888,11 @@ async def _run_benchmark(
                 "judge_error": judge_error,
                 "judge_backend": judge_backend_value,
                 "judge_model": judge_model_value,
-                    "wall_ms": wall_ms,
+                "est_cost": est_cost,
+                "score_std": score_std,
+                "individual_scores": all_scores if len(all_scores) > 1 else None,
+                "task_category": task_category,
+                "wall_ms": wall_ms,
                     "llm_calls": result.llm_calls,
                     "tokens": result.total_tokens,
                     "total_tokens": result.total_tokens,

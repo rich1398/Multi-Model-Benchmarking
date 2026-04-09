@@ -1,4 +1,4 @@
-"""Expert Routing + Constraint Checker pipelines for Occursus-Claude."""
+"""Expert Routing + Constraint Checker pipelines for Occursus Benchmark."""
 
 from __future__ import annotations
 
@@ -185,7 +185,7 @@ class ConstraintCheckerPipeline(BasePipeline):
         steps: list[StepTrace] = []
 
         await self._notify(progress_callback, "Generating initial response...")
-        gen_resp = await client.generate(self.wrap_task(prompt), model=gen_model)
+        gen_resp = await client.generate(self.wrap_task(prompt, cot=self._cot(config)), model=gen_model)
         steps.append(_trace("generate", gen_resp))
         if not gen_resp.ok:
             return _fail(self._ID, f"Generation failed: {gen_resp.error}", tuple(steps))

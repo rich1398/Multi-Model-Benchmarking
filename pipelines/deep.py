@@ -89,7 +89,7 @@ class ChainOfVerificationPipeline(BasePipeline):
 
         # Step 1 -- initial draft
         await self._notify(progress_callback, "Generating initial answer...")
-        draft = await client.generate(self.wrap_task(prompt), model=gen_model)
+        draft = await client.generate(self.wrap_task(prompt, cot=self._cot(config)), model=gen_model)
         steps.append(_trace("draft", draft))
         if not draft.ok:
             return _fail(self._ID, tuple(steps), draft.error)
@@ -185,7 +185,7 @@ class IterativeRefinementPipeline(BasePipeline):
 
         # Step 1 -- initial generation
         await self._notify(progress_callback, "Generating initial answer...")
-        resp = await client.generate(self.wrap_task(prompt), model=gen_model)
+        resp = await client.generate(self.wrap_task(prompt, cot=self._cot(config)), model=gen_model)
         steps.append(_trace("generate", resp))
         if not resp.ok:
             return _fail(self._ID, tuple(steps), resp.error)
@@ -271,7 +271,7 @@ class MixtureOfAgentsPipeline(BasePipeline):
         refine_model = self._role_model(config, model, "reviewer", "critic", "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
         steps: list[StepTrace] = []
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
 
         # Layer 1 -- 3 independent generators in parallel
         await self._notify(progress_callback, "Layer 1: generating 3 independent responses...")

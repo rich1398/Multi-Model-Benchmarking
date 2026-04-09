@@ -1,9 +1,14 @@
-"""Unified async LLM client for Ollama, Anthropic, OpenAI, and Gemini."""
+"""Unified async LLM client for Ollama, Anthropic, OpenAI, Gemini, and subscription CLIs (Occursus Benchmark)."""
 
 from __future__ import annotations
 
 import asyncio
+import os
 import random
+import shutil
+import subprocess
+import sys
+import tempfile
 import time
 from typing import Any
 
@@ -14,6 +19,35 @@ from models import AppConfig, LLMResponse
 
 MAX_RETRIES = 3
 RETRY_STATUSES = {429, 500, 502, 503, 504}
+
+# Subscription CLI infrastructure
+_CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
+_BILLING_PATTERNS = ("balance is too low", "credit balance", "billing", "quota exceeded", "rate limit")
+
+
+def _resolve_cli(name: str) -> str | None:
+    path = shutil.which(name)
+    if path and sys.platform == "win32" and path.lower().endswith((".cmd", ".bat")):
+        exe = shutil.which(f"{name}.exe")
+        if exe:
+            return exe
+    return path
+
+
+def _headless_env() -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    env.update({"CI": "true", "FORCE_COLOR": "0", "TERM": "dumb", "NO_UPDATE_NOTIFIER": "true"})
+    return env
+
+
+def _kill_tree(proc: subprocess.Popen) -> None:
+    if sys.platform == "win32":
+        try:
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True, timeout=5)
+            return
+        except Exception:
+            pass
+    proc.kill()
 
 
 def resolve_provider(model: str) -> str:
@@ -49,9 +83,21 @@ class LLMClient:
         provider: str | None = None,
         temperature: float | None = None,
         system_prompt: str | None = None,
+        max_tokens: int | None = None,
     ) -> LLMResponse:
         model = model or self._config.default_model
         provider = provider or resolve_provider(model)
+
+        # Subscription mode: redirect cloud providers to CLI
+        if getattr(self._config, "subscription_mode", False) and provider in ("anthropic", "openai", "gemini"):
+            sub_sem = self._provider_semaphores.get(provider, asyncio.Semaphore(1))
+            async with sub_sem:
+                if provider == "anthropic":
+                    return await self._call_claude_sub(prompt, model, temperature, system_prompt)
+                elif provider == "openai":
+                    return await self._call_chatgpt_sub(prompt, model, temperature, system_prompt)
+                elif provider == "gemini":
+                    return await self._call_gemini_sub(prompt, model, temperature, system_prompt)
 
         provider_sem = self._provider_semaphores.get(
             provider,
@@ -65,7 +111,7 @@ class LLMClient:
                     )
                 elif provider == "anthropic":
                     return await self._call_anthropic(
-                        prompt, model, temperature, system_prompt
+                        prompt, model, temperature, system_prompt, max_tokens
                     )
                 elif provider == "openai":
                     return await self._call_openai(
@@ -73,7 +119,7 @@ class LLMClient:
                     )
                 elif provider == "gemini":
                     return await self._call_gemini(
-                        prompt, model, temperature, system_prompt
+                        prompt, model, temperature, system_prompt, max_tokens
                     )
                 else:
                     return LLMResponse(
@@ -256,6 +302,7 @@ class LLMClient:
         model: str,
         temperature: float | None,
         system_prompt: str | None,
+        max_tokens: int | None = None,
     ) -> LLMResponse:
         start = time.perf_counter()
         api_key = self._find_api_key("anthropic")
@@ -268,7 +315,7 @@ class LLMClient:
         try:
             body: dict[str, Any] = {
                 "model": model,
-                "max_tokens": 4096,
+                "max_tokens": max_tokens or 4096,
                 "messages": [{"role": "user", "content": prompt}],
             }
             if temperature is not None:
@@ -384,6 +431,7 @@ class LLMClient:
         model: str,
         temperature: float | None,
         system_prompt: str | None,
+        max_tokens: int | None = None,
     ) -> LLMResponse:
         start = time.perf_counter()
         api_key = self._find_api_key("gemini")
@@ -401,7 +449,7 @@ class LLMClient:
             gen_config: dict[str, Any] = {}
             if temperature is not None:
                 gen_config["temperature"] = temperature
-            gen_config["maxOutputTokens"] = 4096
+            gen_config["maxOutputTokens"] = max_tokens or 4096
             payload["generationConfig"] = gen_config
 
             if system_prompt:
@@ -734,6 +782,139 @@ class LLMClient:
             })
         errors = [str(c["reason"]) for c in checks if not c["ok"] and c["reason"]]
         return {"ok": not errors, "checks": checks, "errors": errors}
+
+    # ------------------------------------------------------------------
+    # Subscription CLI providers (routes through paid subscriptions)
+    # ------------------------------------------------------------------
+
+    async def _run_cli(
+        self,
+        cmd: list[str],
+        stdin_data: str | None,
+        timeout: int,
+        model_name: str,
+        provider_name: str,
+        env: dict[str, str],
+    ) -> LLMResponse:
+        def _sync() -> LLMResponse:
+            start = time.perf_counter()
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    stdin=subprocess.PIPE if stdin_data else subprocess.DEVNULL,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    env=env,
+                    creationflags=_CREATE_NO_WINDOW,
+                    cwd=tempfile.gettempdir(),
+                )
+                hard_limit = timeout + 30
+                try:
+                    stdout, stderr = proc.communicate(input=stdin_data, timeout=hard_limit)
+                except subprocess.TimeoutExpired:
+                    _kill_tree(proc)
+                    proc.wait(timeout=5)
+                    latency = (time.perf_counter() - start) * 1000
+                    return LLMResponse(
+                        model=model_name, ok=False, text="",
+                        latency_ms=latency, error=f"Timed out after {timeout}s",
+                        provider=provider_name,
+                    )
+                latency = (time.perf_counter() - start) * 1000
+                if proc.returncode != 0:
+                    detail = ((stderr or "").strip() or (stdout or "").strip() or f"exit {proc.returncode}")[:500]
+                    return LLMResponse(
+                        model=model_name, ok=False, text="",
+                        latency_ms=latency, error=f"CLI error (rc={proc.returncode}): {detail}",
+                        provider=provider_name,
+                    )
+                text = (stdout or "").strip()
+                tokens = max(1, len(text) // 4)
+                return LLMResponse(
+                    text=text, ok=bool(text), latency_ms=latency,
+                    model=model_name, provider=provider_name,
+                    tokens_used=tokens, error="" if text else "Empty CLI response",
+                )
+            except FileNotFoundError:
+                return LLMResponse(
+                    model=model_name, ok=False, text="",
+                    error=f"CLI not found: {cmd[0]}", provider=provider_name,
+                )
+            except Exception as e:
+                latency = (time.perf_counter() - start) * 1000
+                return LLMResponse(
+                    model=model_name, ok=False, text="",
+                    latency_ms=latency, error=str(e), provider=provider_name,
+                )
+        return await asyncio.to_thread(_sync)
+
+    async def _call_claude_sub(
+        self, prompt: str, model: str, temperature: float | None, system_prompt: str | None,
+    ) -> LLMResponse:
+        claude_path = _resolve_cli("claude")
+        if not claude_path:
+            return LLMResponse(ok=False, error="claude CLI not found in PATH", model="Claude (sub)", provider="claude_sub")
+        cmd = [claude_path, "-p", "-", "--model", "sonnet"]
+        if system_prompt:
+            cmd.extend(["--system-prompt", system_prompt])
+        env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+        for attempt in range(3):
+            result = await self._run_cli(cmd, prompt, 120, "Claude (sub)", "claude_sub", env)
+            if result.ok or not any(p in (result.error or "").lower() for p in _BILLING_PATTERNS):
+                return result
+            await asyncio.sleep(5)
+        return result  # type: ignore[possibly-undefined]
+
+    async def _call_chatgpt_sub(
+        self, prompt: str, model: str, temperature: float | None, system_prompt: str | None,
+    ) -> LLMResponse:
+        codex_path = _resolve_cli("codex")
+        if not codex_path:
+            return LLMResponse(ok=False, error="codex CLI not found in PATH", model="ChatGPT (sub)", provider="chatgpt_sub")
+        outfile = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8")
+        outfile.close()
+        try:
+            full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+            cmd = [codex_path, "exec", "-", "--sandbox", "read-only", "--ephemeral", "--skip-git-repo-check", "-o", outfile.name]
+            result = await self._run_cli(cmd, full_prompt, 120, "ChatGPT (sub)", "chatgpt_sub", _headless_env())
+            if result.ok and not result.text:
+                try:
+                    with open(outfile.name, encoding="utf-8") as f:
+                        file_text = f.read().strip()
+                    if file_text:
+                        return LLMResponse(
+                            text=file_text, ok=True, latency_ms=result.latency_ms,
+                            model="ChatGPT (sub)", provider="chatgpt_sub",
+                            tokens_used=max(1, len(file_text) // 4),
+                        )
+                except Exception:
+                    pass
+            return result
+        finally:
+            try:
+                os.unlink(outfile.name)
+            except OSError:
+                pass
+
+    async def _call_gemini_sub(
+        self, prompt: str, model: str, temperature: float | None, system_prompt: str | None,
+    ) -> LLMResponse:
+        gemini_path = _resolve_cli("gemini")
+        if not gemini_path:
+            return LLMResponse(ok=False, error="gemini CLI not found in PATH", model="Gemini (sub)", provider="gemini_sub")
+        full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+        cmd = [gemini_path, "-p", "-", "--model", "gemini-2.5-flash", "--approval-mode", "plan", "--output-format", "text"]
+        return await self._run_cli(cmd, full_prompt, 120, "Gemini (sub)", "gemini_sub", _headless_env())
+
+    async def check_subscription_health(self) -> dict[str, Any]:
+        checks = {}
+        for name in ("claude", "codex", "gemini"):
+            path = _resolve_cli(name)
+            checks[name] = {"available": path is not None, "path": path or "not found"}
+        return checks
 
     async def close(self) -> None:
         await self._http.aclose()

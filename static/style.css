@@ -1,4 +1,4 @@
-/* Occursus-Claude — Dark Theme */
+/* Occursus Benchmark — Dark Theme */
 :root {
   --bg: #0a0a12;
   --bg-panel: #12121e;
@@ -496,6 +496,58 @@ td:first-child:hover { background: transparent; }
 .badge-gemini { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
 
 .dim { font-size: 0.75rem; color: var(--text-dim); }
+
+/* Provider mode radio */
+.provider-mode-group {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.radio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  cursor: pointer;
+  flex: 1;
+  min-width: 250px;
+}
+
+.radio-label:hover { border-color: var(--accent); }
+.radio-label input[type="radio"] { accent-color: var(--accent); margin-top: 0.2rem; }
+.radio-text { font-weight: 600; color: var(--text); }
+
+/* Enhancement toggles */
+.enhancement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.enhancement-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.enhancement-toggle:hover { border-color: var(--accent); }
+.enhancement-toggle.disabled { opacity: 0.4; cursor: not-allowed; }
+.enhancement-toggle.disabled:hover { border-color: var(--border); }
+.enhancement-toggle input[type="checkbox"] { accent-color: var(--accent); }
+.enhancement-toggle select { background: var(--bg-panel); border: 1px solid var(--border); color: var(--text); border-radius: 4px; padding: 0.2rem; }
 
 /* Active run banner */
 .active-run-banner {

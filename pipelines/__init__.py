@@ -1,4 +1,4 @@
-"""Pipeline registry for Occursus-Claude."""
+"""Pipeline registry for Occursus Benchmark."""
 
 from __future__ import annotations
 

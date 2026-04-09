@@ -1,4 +1,4 @@
-/* Occursus-Claude Frontend */
+/* Occursus Benchmark Frontend */
 
 const BENCHMARK_MODELS = [
   { provider: 'ollama',    model: 'llama3.2',                label: 'Llama 3.2',         badge: 'local' },
@@ -307,6 +307,24 @@ function setupEventListeners() {
   document.querySelectorAll('.btn-test').forEach((btn) => {
     btn.addEventListener('click', () => testProvider(btn.dataset.provider));
   });
+
+  // Provider mode toggle — disable incompatible enhancements in subscription mode
+  document.querySelectorAll('input[name="provider-mode"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const isSub = document.querySelector('input[name="provider-mode"]:checked')?.value === 'subscription';
+      const tokenBudget = document.getElementById('cb-token-budget');
+      const adaptiveTemp = document.getElementById('cb-adaptive-temp');
+      tokenBudget.disabled = isSub;
+      adaptiveTemp.disabled = isSub;
+      if (isSub) {
+        tokenBudget.checked = false;
+        adaptiveTemp.checked = false;
+      }
+      document.getElementById('toggle-token-budget').classList.toggle('disabled', isSub);
+      document.getElementById('toggle-adaptive-temp').classList.toggle('disabled', isSub);
+      updateHealthBanner();
+    });
+  });
 }
 
 function updateHealthBanner() {
@@ -354,6 +372,12 @@ async function startRun() {
     pipelines: selectedPipelines,
     enabled_models: enabledModels,
     task_suite: taskSuite,
+    subscription_mode: document.querySelector('input[name="provider-mode"]:checked')?.value === 'subscription',
+    cot_enabled: document.getElementById('cb-cot')?.checked || false,
+    token_budget_enabled: document.getElementById('cb-token-budget')?.checked || false,
+    adaptive_temp_enabled: document.getElementById('cb-adaptive-temp')?.checked || false,
+    repeat_count: parseInt(document.getElementById('select-repeat')?.value || '1', 10),
+    cost_tracking_enabled: document.getElementById('cb-cost-tracking')?.checked || false,
   };
 
   if (customPrompt) {

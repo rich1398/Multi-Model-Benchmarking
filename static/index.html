@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Occursus-Claude — Multi-LLM Benchmark</title>
+  <title>Occursus Benchmark — Multi-LLM Benchmark</title>
   <link rel="stylesheet" href="/static/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header>
-    <h1>Occursus-Claude</h1>
+    <h1>Occursus Benchmark</h1>
     <p class="subtitle">Multi-LLM Synthesis Benchmark</p>
   </header>
 
@@ -73,10 +73,58 @@
         </div>
       </div>
 
+      <h3>Provider Mode</h3>
+      <div class="provider-mode-group">
+        <label class="radio-label">
+          <input type="radio" name="provider-mode" value="api" checked>
+          <span class="radio-text">API Mode</span>
+          <span class="hint">Uses API keys. Full control over temperature and token limits.</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="provider-mode" value="subscription">
+          <span class="radio-text">Subscription CLI Mode</span>
+          <span class="hint">Uses paid subscriptions ($0 extra cost). No temperature/token control.</span>
+        </label>
+      </div>
+
       <h3>Benchmark Models</h3>
       <p class="hint">Toggle models on/off. Claude + GPT auto-judge (blind, scores averaged to 100). The tool auto-assigns model roles.</p>
       <div id="model-toggles" class="model-toggle-grid"></div>
       <div id="health-banner" class="health-banner">Checking model availability...</div>
+
+      <h3>Enhancements</h3>
+      <div class="enhancement-grid">
+        <label class="enhancement-toggle" id="toggle-cot">
+          <input type="checkbox" id="cb-cot">
+          <span>Chain-of-Thought</span>
+          <span class="hint">Forces step-by-step reasoning in generation steps</span>
+        </label>
+        <label class="enhancement-toggle" id="toggle-token-budget">
+          <input type="checkbox" id="cb-token-budget">
+          <span>Token Budget</span>
+          <span class="hint">Reserves 60% of token budget for final synthesis</span>
+        </label>
+        <label class="enhancement-toggle" id="toggle-adaptive-temp">
+          <input type="checkbox" id="cb-adaptive-temp">
+          <span>Adaptive Temperature</span>
+          <span class="hint">Auto-sets temperature based on task type</span>
+        </label>
+        <label class="enhancement-toggle">
+          <select id="select-repeat" style="width:60px">
+            <option value="1" selected>1x</option>
+            <option value="3">3x</option>
+            <option value="5">5x</option>
+          </select>
+          <span>Repeat Runs</span>
+          <span class="hint">Run each cell N times for statistical significance</span>
+        </label>
+        <label class="enhancement-toggle">
+          <input type="checkbox" id="cb-cost-tracking" checked>
+          <span>Cost Tracking</span>
+          <span class="hint">Track and display estimated API costs</span>
+        </label>
+      </div>
+      <div id="cost-estimate" class="hint" style="margin-top:0.5rem"></div>
 
       <h3>Pipelines</h3>
       <div id="pipeline-checkboxes" class="pipeline-grid"></div>

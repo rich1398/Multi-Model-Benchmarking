@@ -1,4 +1,4 @@
-"""Debate-family pipelines for Occursus-Claude."""
+"""Debate-family pipelines for Occursus Benchmark."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ class Debate2WayPipeline(BasePipeline):
         alt_model = self._role_model(config, model, "generator_alt", "generator")
         critic_model = self._role_model(config, model, "critic", "reviewer", "generator")
         arbiter_model = self._role_model(config, model, "arbiter", "synthesizer", "judge", "generator")
-        task = self.wrap_task(prompt)
+        task = self.wrap_task(prompt, cot=self._cot(config))
         steps: list[StepTrace] = []
 
         # --- Phase 1: parallel positions ----------------------------------
@@ -195,7 +195,7 @@ class DissentThenMergePipeline(BasePipeline):
         alt_model = self._role_model(config, model, "generator_alt", "generator")
         critic_model = self._role_model(config, model, "critic", "reviewer", "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
-        task = self.wrap_task(prompt)
+        task = self.wrap_task(prompt, cot=self._cot(config))
         steps: list[StepTrace] = []
 
         # --- Phase 1: parallel generation ---------------------------------
@@ -295,7 +295,7 @@ class RedTeamBlueTeamPipeline(BasePipeline):
         gen_model = self._role_model(config, model, "generator")
         critic_model = self._role_model(config, model, "critic", "reviewer", "generator")
         revise_model = self._role_model(config, model, "reviewer", "synthesizer", "generator")
-        task = self.wrap_task(prompt)
+        task = self.wrap_task(prompt, cot=self._cot(config))
         steps: list[StepTrace] = []
 
         # --- Phase 1: blue team generates ---------------------------------

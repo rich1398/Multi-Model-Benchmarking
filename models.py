@@ -1,4 +1,4 @@
-"""Immutable data models for Occursus-Claude."""
+"""Immutable data models for Occursus Benchmark."""
 
 from __future__ import annotations
 
@@ -121,3 +121,11 @@ class AppConfig:
     results_dir: str = "results/"
     personas: tuple[Persona, ...] = ()
     role_models: dict[str, str] = field(default_factory=dict)
+    # Enhancement toggles
+    cot_enabled: bool = False
+    token_budget_enabled: bool = False
+    adaptive_temp_enabled: bool = False
+    repeat_count: int = 1
+    cost_tracking_enabled: bool = True
+    subscription_mode: bool = False
+    max_output_tokens: int = 4096

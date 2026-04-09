@@ -1,4 +1,4 @@
-"""Best-of-N selection pipelines for Occursus-Claude."""
+"""Best-of-N selection pipelines for Occursus Benchmark."""
 
 from __future__ import annotations
 
@@ -109,7 +109,7 @@ class BestOf3Pipeline(BasePipeline):
     ) -> PipelineResult:
         gen_model = self._role_model(config, model, "generator")
         judge_model = self._role_model(config, model, "judge", "reviewer", "generator")
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
 
         # --- Phase 1: Generate 3 responses in parallel ---
         await self._notify(progress_callback, "Generating 3 candidate responses...")
@@ -198,7 +198,7 @@ class SampleAndVotePipeline(BasePipeline):
     ) -> PipelineResult:
         gen_model = self._role_model(config, model, "generator")
         judge_model = self._role_model(config, model, "judge", "reviewer", "generator")
-        wrapped = self.wrap_task(prompt)
+        wrapped = self.wrap_task(prompt, cot=self._cot(config))
 
         # --- Phase 1: Generate 5 responses in parallel ---
         await self._notify(progress_callback, "Generating 5 candidate responses...")
