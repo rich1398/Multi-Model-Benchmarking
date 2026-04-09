@@ -35,11 +35,17 @@ def _resolve_cli(name: str) -> str | None:
     return path
 
 
-def _build_cmd(cli_path: str, args: list[str]) -> list[str]:
-    """Build subprocess command. Wraps .cmd/.bat with cmd.exe /c on Windows."""
+def _build_cmd(cli_path: str, args: list[str]) -> tuple[str, bool]:
+    """Build subprocess command. Returns (command_string_or_list, use_shell).
+
+    On Windows, .cmd/.bat files must run with shell=True to avoid
+    deadlocks in frozen PyInstaller executables.
+    """
     if sys.platform == "win32" and cli_path.lower().endswith((".cmd", ".bat")):
-        return ["cmd.exe", "/c", cli_path] + args
-    return [cli_path] + args
+        # Use shell=True with a quoted command string for .cmd files
+        parts = [f'"{cli_path}"'] + [f'"{a}"' if " " in a else a for a in args]
+        return " ".join(parts), True
+    return [cli_path] + args, False
 
 
 def _headless_env() -> dict[str, str]:
@@ -798,19 +804,17 @@ class LLMClient:
 
     async def _run_cli(
         self,
-        cmd: list[str],
+        cmd,
         stdin_data: str | None,
         timeout: int,
         model_name: str,
         provider_name: str,
         env: dict[str, str],
+        use_shell: bool = False,
     ) -> LLMResponse:
         def _sync() -> LLMResponse:
             start = time.perf_counter()
             try:
-                # Don't use CREATE_NO_WINDOW with cmd.exe — it causes deadlocks
-                is_cmd_shell = cmd and cmd[0].lower() in ("cmd.exe", "cmd")
-                flags = 0 if is_cmd_shell else _CREATE_NO_WINDOW
                 proc = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
@@ -820,7 +824,8 @@ class LLMClient:
                     encoding="utf-8",
                     errors="replace",
                     env=env,
-                    creationflags=flags,
+                    shell=use_shell,
+                    creationflags=0 if use_shell else _CREATE_NO_WINDOW,
                     cwd=tempfile.gettempdir(),
                 )
                 hard_limit = timeout + 30
@@ -872,10 +877,10 @@ class LLMClient:
         cmd_args = ["-p", "-", "--model", "sonnet"]
         if system_prompt:
             cmd_args.extend(["--system-prompt", system_prompt])
-        cmd = _build_cmd(claude_path, cmd_args)
+        cmd, use_shell = _build_cmd(claude_path, cmd_args)
         env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
         for attempt in range(3):
-            result = await self._run_cli(cmd, prompt, 120, "Claude (sub)", "claude_sub", env)
+            result = await self._run_cli(cmd, prompt, 120, "Claude (sub)", "claude_sub", env, use_shell=use_shell)
             if result.ok or not any(p in (result.error or "").lower() for p in _BILLING_PATTERNS):
                 return result
             await asyncio.sleep(5)
@@ -891,8 +896,8 @@ class LLMClient:
         outfile.close()
         try:
             full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-            cmd = _build_cmd(codex_path, ["exec", "-", "--sandbox", "read-only", "--ephemeral", "--skip-git-repo-check", "-o", outfile.name])
-            result = await self._run_cli(cmd, full_prompt, 120, "ChatGPT (sub)", "chatgpt_sub", _headless_env())
+            cmd, use_shell = _build_cmd(codex_path, ["exec", "-", "--sandbox", "read-only", "--ephemeral", "--skip-git-repo-check", "-o", outfile.name])
+            result = await self._run_cli(cmd, full_prompt, 120, "ChatGPT (sub)", "chatgpt_sub", _headless_env(), use_shell=use_shell)
             if result.ok and not result.text:
                 try:
                     with open(outfile.name, encoding="utf-8") as f:
@@ -919,8 +924,8 @@ class LLMClient:
         if not gemini_path:
             return LLMResponse(ok=False, error="gemini CLI not found in PATH", model="Gemini (sub)", provider="gemini_sub")
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        cmd = _build_cmd(gemini_path, ["-p", "-", "--model", "gemini-2.5-flash", "--approval-mode", "plan", "--output-format", "text"])
-        return await self._run_cli(cmd, full_prompt, 120, "Gemini (sub)", "gemini_sub", _headless_env())
+        cmd, use_shell = _build_cmd(gemini_path, ["-p", "-", "--model", "gemini-2.5-flash", "--approval-mode", "plan", "--output-format", "text"])
+        return await self._run_cli(cmd, full_prompt, 120, "Gemini (sub)", "gemini_sub", _headless_env(), use_shell=use_shell)
 
     async def check_subscription_health(self) -> dict[str, Any]:
         checks = {}
