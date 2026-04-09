@@ -1,0 +1,9 @@
+include README.md
+include LICENSE
+include requirements.txt
+include .env.example
+recursive-include static *.html *.js *.css
+recursive-include tasks *.json
+recursive-include config *.yaml
+recursive-include pipelines *.py
+recursive-include tests *.py

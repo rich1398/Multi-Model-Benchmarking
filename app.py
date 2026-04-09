@@ -1067,6 +1067,15 @@ def _csv_escape(value: str) -> str:
     return value
 
 
+def _cli_entry() -> None:
+    """Entry point for `occursus-benchmark` console command."""
+    import uvicorn
+    import threading
+    import webbrowser
+    threading.Thread(target=lambda: (__import__("time").sleep(2), webbrowser.open("http://localhost:8000")), daemon=True).start()
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
