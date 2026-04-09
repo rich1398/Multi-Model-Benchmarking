@@ -352,6 +352,12 @@ async def api_run(request: Request):
     config = _get_config()
     client = _get_client()
     client.subscription_mode = subscription_mode
+
+    # Cancel any still-running previous runs to free semaphores
+    for old_id, old_event in list(_cancel_events.items()):
+        if not old_event.is_set():
+            old_event.set()
+
     run_config = replace(
         config,
         default_provider=primary_provider,

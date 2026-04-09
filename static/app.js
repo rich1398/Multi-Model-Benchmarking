@@ -348,6 +348,16 @@ function updateHealthBanner() {
 }
 
 async function startRun() {
+  // Clean up any previous run's SSE connection
+  if (state.eventSource) {
+    state.eventSource.close();
+    state.eventSource = null;
+  }
+  if (state.activeRunId) {
+    fetch(`/api/run/${state.activeRunId}`, { method: 'DELETE' }).catch(() => {});
+    state.activeRunId = null;
+  }
+
   const selectedPipelines = [...document.querySelectorAll('input[name="pipeline"]:checked')]
     .map((cb) => cb.value);
   const selectedTasks = [...document.querySelectorAll('input[name="task"]:checked')]
@@ -620,7 +630,7 @@ function initChart(pipelineIds) {
       scales: {
         y: {
           beginAtZero: true,
-          max: 10,
+          max: 100,
           ticks: { color: '#888898' },
           grid: { color: '#2a2a3e' },
         },
@@ -677,8 +687,8 @@ function updateTableCell(data) {
     cell.textContent = data.ok ? data.score : 'ERR';
     cell.className = 'score-cell ' + (
       !data.ok ? 'score-error' :
-      data.score >= 7 ? 'score-high' :
-      data.score >= 4 ? 'score-mid' : 'score-low'
+      data.score >= 70 ? 'score-high' :
+      data.score >= 40 ? 'score-mid' : 'score-low'
     );
   }
   updateAverages();
@@ -701,8 +711,8 @@ function updateAverages() {
       cell.textContent = avgNumber == null ? '-' : avgNumber.toFixed(1);
       cell.className = 'score-cell ' + (
         avgNumber == null ? '' :
-        avgNumber >= 7 ? 'score-high' :
-        avgNumber >= 4 ? 'score-mid' : 'score-low'
+        avgNumber >= 70 ? 'score-high' :
+        avgNumber >= 40 ? 'score-mid' : 'score-low'
       );
     }
   });
@@ -811,7 +821,7 @@ async function showDrilldown(taskId, pipelineId) {
 
   html += `<div class="modal-section">
     <div class="modal-label">Score</div>
-    <div class="stat-value ${result.score >= 7 ? 'score-high' : result.score >= 4 ? 'score-mid' : 'score-low'}">${Number(result.score || 0)}/10</div>
+    <div class="stat-value ${result.score >= 70 ? 'score-high' : result.score >= 40 ? 'score-mid' : 'score-low'}">${Number(result.score || 0)}/100</div>
   </div>
   <div class="modal-section">
     <div class="modal-label">Judge Reasoning</div>
