@@ -26,12 +26,20 @@ _BILLING_PATTERNS = ("balance is too low", "credit balance", "billing", "quota e
 
 
 def _resolve_cli(name: str) -> str | None:
+    """Resolve CLI executable. On Windows, .cmd/.bat files are valid."""
     path = shutil.which(name)
     if path and sys.platform == "win32" and path.lower().endswith((".cmd", ".bat")):
         exe = shutil.which(f"{name}.exe")
         if exe:
             return exe
     return path
+
+
+def _build_cmd(cli_path: str, args: list[str]) -> list[str]:
+    """Build subprocess command. Wraps .cmd/.bat with cmd.exe /c on Windows."""
+    if sys.platform == "win32" and cli_path.lower().endswith((".cmd", ".bat")):
+        return ["cmd.exe", "/c", cli_path] + args
+    return [cli_path] + args
 
 
 def _headless_env() -> dict[str, str]:
@@ -800,6 +808,9 @@ class LLMClient:
         def _sync() -> LLMResponse:
             start = time.perf_counter()
             try:
+                # Don't use CREATE_NO_WINDOW with cmd.exe — it causes deadlocks
+                is_cmd_shell = cmd and cmd[0].lower() in ("cmd.exe", "cmd")
+                flags = 0 if is_cmd_shell else _CREATE_NO_WINDOW
                 proc = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
@@ -809,7 +820,7 @@ class LLMClient:
                     encoding="utf-8",
                     errors="replace",
                     env=env,
-                    creationflags=_CREATE_NO_WINDOW,
+                    creationflags=flags,
                     cwd=tempfile.gettempdir(),
                 )
                 hard_limit = timeout + 30
@@ -858,9 +869,10 @@ class LLMClient:
         claude_path = _resolve_cli("claude")
         if not claude_path:
             return LLMResponse(ok=False, error="claude CLI not found in PATH", model="Claude (sub)", provider="claude_sub")
-        cmd = [claude_path, "-p", "-", "--model", "sonnet"]
+        cmd_args = ["-p", "-", "--model", "sonnet"]
         if system_prompt:
-            cmd.extend(["--system-prompt", system_prompt])
+            cmd_args.extend(["--system-prompt", system_prompt])
+        cmd = _build_cmd(claude_path, cmd_args)
         env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
         for attempt in range(3):
             result = await self._run_cli(cmd, prompt, 120, "Claude (sub)", "claude_sub", env)
@@ -879,7 +891,7 @@ class LLMClient:
         outfile.close()
         try:
             full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-            cmd = [codex_path, "exec", "-", "--sandbox", "read-only", "--ephemeral", "--skip-git-repo-check", "-o", outfile.name]
+            cmd = _build_cmd(codex_path, ["exec", "-", "--sandbox", "read-only", "--ephemeral", "--skip-git-repo-check", "-o", outfile.name])
             result = await self._run_cli(cmd, full_prompt, 120, "ChatGPT (sub)", "chatgpt_sub", _headless_env())
             if result.ok and not result.text:
                 try:
@@ -907,7 +919,7 @@ class LLMClient:
         if not gemini_path:
             return LLMResponse(ok=False, error="gemini CLI not found in PATH", model="Gemini (sub)", provider="gemini_sub")
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        cmd = [gemini_path, "-p", "-", "--model", "gemini-2.5-flash", "--approval-mode", "plan", "--output-format", "text"]
+        cmd = _build_cmd(gemini_path, ["-p", "-", "--model", "gemini-2.5-flash", "--approval-mode", "plan", "--output-format", "text"])
         return await self._run_cli(cmd, full_prompt, 120, "Gemini (sub)", "gemini_sub", _headless_env())
 
     async def check_subscription_health(self) -> dict[str, Any]:
