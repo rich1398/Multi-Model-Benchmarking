@@ -2,6 +2,8 @@
 
 A benchmarking platform that tests whether multi-LLM synthesis pipelines produce better results than single-model baselines. Supports 4 providers, 22 orchestration strategies, dual blind judging, and subscription CLI mode ($0 cost).
 
+https://dev.to/lam8da/i-built-a-tool-to-test-whether-multiple-llms-working-together-can-beat-a-single-model-4g0l
+
 ## Thesis
 
 > Can combining multiple LLMs through structured pipelines (debate, merge, verification, decomposition) consistently outperform a single frontier model answering directly?
