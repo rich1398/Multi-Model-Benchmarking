@@ -85,6 +85,26 @@ async def _gen_experts(
     return results, steps
 
 
+async def _gen_experts_diverse(
+    wrapped: str, personas: tuple[Persona, ...],
+    client: LLMClient, models: list[str],
+) -> tuple[tuple[LLMResponse, ...], list[StepTrace]]:
+    """Like _gen_experts but cycles through diverse models."""
+    tasks = tuple(
+        client.generate(
+            wrapped, model=models[i % len(models)],
+            temperature=p.temperature, system_prompt=p.system_prompt,
+        )
+        for i, p in enumerate(personas)
+    )
+    results: tuple[LLMResponse, ...] = await asyncio.gather(*tasks)
+    steps = [
+        _trace(f"expert_{p.name.lower()}", r)
+        for p, r in zip(personas, results)
+    ]
+    return results, steps
+
+
 def _extract_valid(
     personas: tuple[Persona, ...], expert_results: tuple[LLMResponse, ...],
 ) -> tuple[list[str], tuple[Persona, ...], list[int]]:
@@ -123,13 +143,13 @@ class MergeFullPipeline(BasePipeline):
         self, prompt: str, client: LLMClient, config: AppConfig,
         *, model: str | None = None, progress_callback=None,
     ) -> PipelineResult:
-        gen_model = self._role_model(config, model, "generator")
+        diverse = self._diverse_models(config, model)
         synth_model = self._role_model(config, model, "synthesizer", "generator")
         wrapped = self.wrap_task(prompt, cot=self._cot(config))
         personas = _get_personas(config)
 
-        await self._notify(progress_callback, "Generating 3 expert perspectives...")
-        expert_results, steps = await _gen_experts(wrapped, personas, client, gen_model)
+        await self._notify(progress_callback, "Generating 3 expert perspectives (multi-model)...")
+        expert_results, steps = await _gen_experts_diverse(wrapped, personas, client, diverse)
         all_texts, valid_personas, valid_idx = _extract_valid(personas, expert_results)
         valid_texts = [all_texts[i] for i in valid_idx]
 
@@ -163,15 +183,15 @@ class CritiqueThenMergePipeline(BasePipeline):
         self, prompt: str, client: LLMClient, config: AppConfig,
         *, model: str | None = None, progress_callback=None,
     ) -> PipelineResult:
-        gen_model = self._role_model(config, model, "generator")
+        diverse = self._diverse_models(config, model)
         critique_model = self._role_model(config, model, "critic", "reviewer", "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
         wrapped = self.wrap_task(prompt, cot=self._cot(config))
         personas = _get_personas(config)
 
-        # Phase 1: Expert generation
-        await self._notify(progress_callback, "Generating 3 expert perspectives...")
-        expert_results, steps = await _gen_experts(wrapped, personas, client, gen_model)
+        # Phase 1: Expert generation (multi-model)
+        await self._notify(progress_callback, "Generating 3 expert perspectives (multi-model)...")
+        expert_results, steps = await _gen_experts_diverse(wrapped, personas, client, diverse)
         all_texts, _, valid_idx = _extract_valid(personas, expert_results)
 
         if not valid_idx:
@@ -233,15 +253,15 @@ class RankedMergePipeline(BasePipeline):
         self, prompt: str, client: LLMClient, config: AppConfig,
         *, model: str | None = None, progress_callback=None,
     ) -> PipelineResult:
-        gen_model = self._role_model(config, model, "generator")
+        diverse = self._diverse_models(config, model)
         judge_model = self._role_model(config, model, "judge", "reviewer", "generator")
         synth_model = self._role_model(config, model, "synthesizer", "generator")
         wrapped = self.wrap_task(prompt, cot=self._cot(config))
         personas = _get_personas(config)
 
-        # Phase 1: Expert generation
-        await self._notify(progress_callback, "Generating 3 expert perspectives...")
-        expert_results, steps = await _gen_experts(wrapped, personas, client, gen_model)
+        # Phase 1: Expert generation (multi-model)
+        await self._notify(progress_callback, "Generating 3 expert perspectives (multi-model)...")
+        expert_results, steps = await _gen_experts_diverse(wrapped, personas, client, diverse)
         all_texts, valid_personas, valid_idx = _extract_valid(personas, expert_results)
         valid_texts = [all_texts[i] for i in valid_idx]
 

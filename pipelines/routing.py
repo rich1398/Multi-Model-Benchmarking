@@ -87,7 +87,7 @@ class ExpertRoutingPipeline(BasePipeline):
         *, model: str | None = None, progress_callback=None,
     ) -> PipelineResult:
         router_model = self._role_model(config, model, "generator")
-        expert_model = self._role_model(config, model, "generator_alt", "generator")
+        diverse = self._diverse_models(config, model)
         assembler_model = self._role_model(config, model, "synthesizer", "generator")
         steps: list[StepTrace] = []
 
@@ -106,14 +106,14 @@ class ExpertRoutingPipeline(BasePipeline):
 
         await self._notify(progress_callback, f"Routing to {len(subtasks)} specialist experts...")
         expert_coros = []
-        for st in subtasks[:4]:
+        for i, st in enumerate(subtasks[:4]):
             expert_type = st.get("expert", "analysis")
             task_text = st.get("task", prompt)
             expert_prompt = EXPERT_PROMPTS.get(
                 expert_type, EXPERT_PROMPTS["analysis"]
             ).format(task=task_text)
             expert_coros.append(client.generate(
-                expert_prompt, model=expert_model, temperature=0.3,
+                expert_prompt, model=diverse[i % len(diverse)], temperature=0.3,
             ))
 
         expert_results: list[LLMResponse] = list(await asyncio.gather(*expert_coros))

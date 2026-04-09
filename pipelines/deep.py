@@ -267,17 +267,16 @@ class MixtureOfAgentsPipeline(BasePipeline):
         model: str | None = None,
         progress_callback=None,
     ) -> PipelineResult:
-        gen_model = self._role_model(config, model, "generator")
-        refine_model = self._role_model(config, model, "reviewer", "critic", "generator")
+        diverse = self._diverse_models(config, model)
         synth_model = self._role_model(config, model, "synthesizer", "generator")
         steps: list[StepTrace] = []
         wrapped = self.wrap_task(prompt, cot=self._cot(config))
 
-        # Layer 1 -- 3 independent generators in parallel
-        await self._notify(progress_callback, "Layer 1: generating 3 independent responses...")
+        # Layer 1 -- 3 independent generators in parallel (one per model)
+        await self._notify(progress_callback, "Layer 1: generating 3 responses (multi-model)...")
         l1_coros = tuple(
-            client.generate(wrapped, model=gen_model, temperature=temp)
-            for temp in self._L1_TEMPS
+            client.generate(wrapped, model=diverse[i % len(diverse)], temperature=temp)
+            for i, temp in enumerate(self._L1_TEMPS)
         )
         l1_results = await asyncio.gather(*l1_coros)
 
@@ -297,8 +296,8 @@ class MixtureOfAgentsPipeline(BasePipeline):
             f"three.\n\n{combined_l1}"
         )
         l2_coros = tuple(
-            client.generate(l2_prompt, model=refine_model, temperature=temp)
-            for temp in self._L1_TEMPS
+            client.generate(l2_prompt, model=diverse[i % len(diverse)], temperature=temp)
+            for i, temp in enumerate(self._L1_TEMPS)
         )
         l2_results = await asyncio.gather(*l2_coros)
 

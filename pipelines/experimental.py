@@ -171,24 +171,24 @@ class PersonaCouncilPipeline(BasePipeline):
         model: str | None = None,
         progress_callback=None,
     ) -> PipelineResult:
-        gen_model = self._role_model(config, model, "generator")
+        diverse = self._diverse_models(config, model)
         synth_model = self._role_model(config, model, "synthesizer", "generator")
         task = self.wrap_task(prompt, cot=self._cot(config))
         steps: list[StepTrace] = []
 
-        # --- Phase 1: 7 persona responses in parallel ---------------------
+        # --- Phase 1: 7 persona responses cycling through diverse models --
         await self._notify(
-            progress_callback, "Convening council of 7 personas...",
+            progress_callback, "Convening council of 7 personas (multi-model)...",
         )
 
         persona_coros = tuple(
             client.generate(
                 task,
-                model=gen_model,
+                model=diverse[i % len(diverse)],
                 temperature=temperature,
                 system_prompt=system_prompt,
             )
-            for _, system_prompt, temperature in _COUNCIL_PERSONAS
+            for i, (_, system_prompt, temperature) in enumerate(_COUNCIL_PERSONAS)
         )
         persona_results: tuple[LLMResponse, ...] = await asyncio.gather(
             *persona_coros,

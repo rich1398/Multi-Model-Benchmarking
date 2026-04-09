@@ -71,6 +71,21 @@ class BasePipeline(ABC):
                 return model
         return str(fallback_model or config.default_model)
 
+    def _diverse_models(self, config: AppConfig, fallback: str | None) -> list[str]:
+        """Return up to 3 distinct models for multi-agent diversity."""
+        models = []
+        seen = set()
+        for role in ("generator", "generator_alt", "critic", "reviewer", "synthesizer"):
+            m = self._role_model(config, fallback, role)
+            if m and m not in seen:
+                models.append(m)
+                seen.add(m)
+            if len(models) >= 3:
+                break
+        if not models:
+            models = [str(fallback or config.default_model)]
+        return models
+
     async def _notify(self, callback, message: str) -> None:
         if callback:
             await callback(message)
