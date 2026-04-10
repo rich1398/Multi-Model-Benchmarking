@@ -92,5 +92,18 @@ def _register_defaults() -> None:
     except ImportError:
         pass
 
+    try:
+        from pipelines.combinations import (
+            MeshVerifyPipeline, MeshRankedPipeline, GSVPipeline,
+            MeshRankedVerifyPipeline, AdaptiveCascadePipeline,
+        )
+        register_pipeline(MeshVerifyPipeline())
+        register_pipeline(MeshRankedPipeline())
+        register_pipeline(GSVPipeline())
+        register_pipeline(MeshRankedVerifyPipeline())
+        register_pipeline(AdaptiveCascadePipeline())
+    except ImportError:
+        pass
+
 
 _register_defaults()
