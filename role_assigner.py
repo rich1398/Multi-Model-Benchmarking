@@ -37,42 +37,30 @@ def auto_assign_roles(
         primary_model = enabled_models[0]["model"]
         primary_provider = enabled_models[0].get("provider", "ollama")
 
-    generator_alt, _ = _pick_model(
-        by_provider,
-        ("openai", "gemini", "ollama", "anthropic"),
-        exclude_models={primary_model},
-    )
-    if not generator_alt:
-        generator_alt = primary_model
+    # Build a list of distinct models for even distribution
+    distinct: list[tuple[str, str]] = [(primary_model, primary_provider)]
+    seen = {primary_model}
+    for prov in ("openai", "gemini", "anthropic", "ollama"):
+        for m in by_provider.get(prov, []):
+            if m and m not in seen:
+                distinct.append((m, prov))
+                seen.add(m)
 
-    # Reviewer is a high-frequency reliability-sensitive role in the deep pipelines.
-    # Prefer a non-Gemini reviewer when a stable alternative is available, and do
-    # not force Ollama into this slot just because many models are enabled.
-    reviewer_model, _ = _pick_model(
-        by_provider,
-        ("openai", "anthropic", "ollama"),
-        exclude_models={primary_model},
-    )
-    if not reviewer_model:
-        reviewer_model = primary_model
-    if not reviewer_model:
-        reviewer_model, _ = _pick_model(by_provider, ("gemini",))
+    model_a = distinct[0][0]  # primary (Claude)
+    model_b = distinct[1][0] if len(distinct) > 1 else model_a  # secondary (GPT)
+    model_c = distinct[2][0] if len(distinct) > 2 else model_b  # tertiary (Gemini)
 
-    critic_model, _ = _pick_model(
-        by_provider,
-        ("gemini", "openai", "anthropic", "ollama"),
-        exclude_models={primary_model, reviewer_model},
-    )
-    if not critic_model:
-        critic_model = generator_alt or reviewer_model or primary_model
-
+    # Distribute roles evenly: 2 roles per provider when 3 cloud models available
+    # generator + arbiter = model_a (strongest, quality-critical)
+    # generator_alt + critic = model_b (different perspective, adversarial)
+    # synthesizer + reviewer = model_c (independent synthesis and review)
     role_models: dict[str, str] = {
-        "generator": primary_model,
-        "generator_alt": generator_alt,
-        "critic": critic_model,
-        "synthesizer": primary_model,
-        "reviewer": reviewer_model or primary_model,
-        "arbiter": primary_model,
+        "generator": model_a,
+        "generator_alt": model_b,
+        "critic": model_b,
+        "synthesizer": model_c,
+        "reviewer": model_c,
+        "arbiter": model_a,
     }
 
     judge_models: list[dict[str, str]] = []
