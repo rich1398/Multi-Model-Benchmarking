@@ -51,10 +51,19 @@ https://dev.to/lam8da/i-built-a-tool-to-test-whether-multiple-llms-working-toget
 - **Managed Team**: Lead decomposes → specialists execute (multi-model) → critic reviews → verifier checks
 - **Corp Hierarchy**: 4-tier adaptive — T0 local, T1 flagship, T2 managed team, T3 multi-clique deliberation
 
-## Two Provider Modes
+## Three Provider Modes
+
+| Mode | Speed | Cost | Best for |
+|------|-------|------|----------|
+| **API** | 10-14 hours (full benchmark) | ~$50-80 | Fastest, full control |
+| **Hybrid** | 12-18 hours | ~$15-25 | Best balance — CLI primary, API for parallelism |
+| **Subscription CLI** | 30-45 hours | $0 | Cheapest, overnight runs |
 
 ### API Mode (Default)
 Standard REST API calls using your API keys. Full control over temperature, token limits, and concurrency. Uses flagship models: Claude Opus 4.6, GPT-5.4, Gemini 2.5 Pro.
+
+### Hybrid Mode (Recommended)
+CLI primary ($0), API as parallel fallback (~30% of API-only cost). When a CLI call would be blocked by another call to the same provider, the system automatically uses API instead. If API credits run out mid-run, it gracefully falls back to CLI-only — no data loss, just slower.
 
 ### Subscription CLI Mode
 Routes calls through your existing paid subscriptions at $0 extra cost:
@@ -138,18 +147,30 @@ tasks/                JSON task suites (smoke, core, stress, thesis)
 tests/                Test suite
 ```
 
-## Early Results
+## Benchmark Results
 
-On hard thesis tasks with flagship models and strict dual judging (Opus 4.6 + GPT-5.4):
+### With flagship models and strict dual judging (Opus 4.6 + GPT-5.4)
 
-- **Graph-Mesh Collaboration** led earlier benchmarks at 93.3 avg (+10.8 vs baseline)
-- **Chain of Verification** strong at 91.3 (+8.8 vs baseline)
-- **Ranked Merge** consistent at 91.2 (+8.7 vs baseline)
-- **Selection-based pipelines** (Sample & Vote, Ranked Merge) consistently outperform synthesis-based approaches
-- **Debate-style pipelines** underperform on constrained tasks
-- Multi-model pipelines show **genuine, measurable improvement** over single-model on hard tasks
+On hard thesis tasks (cross-domain synthesis, code refactoring, constraint satisfaction, needle-in-haystack):
 
-Combination pipelines and corporate hierarchy variants are currently being benchmarked.
+| Rank | Pipeline | Avg Score | vs Baseline | Calls |
+|------|----------|-----------|-------------|-------|
+| 1 | **Graph-Mesh Collab** | **93.3** | **+10.8** | 10 |
+| 2 | Chain of Verification | 91.3 | +8.8 | 4 |
+| 3 | Ranked Merge | 91.2 | +8.7 | 5 |
+| 4 | Tournament | 90.0 | +7.5 | 12 |
+| 5 | Reverse Engineer | 89.7 | +7.2 | 4 |
+| — | Single (baseline) | 82.5 | — | 1 |
+
+### Key findings
+- **Multi-model pipelines beat single-model by up to 10.8 points on hard tasks** — genuine, substantial improvement
+- **Selection pressure** (Sample & Vote, Ranked Merge) consistently outperforms synthesis-based approaches
+- **Graph-mesh topology** (all-to-all agent communication) is the strongest collaboration pattern
+- **Debate-style pipelines** underperform on constrained tasks — forcing opposition destroys quality
+- **Strict flagship judges** (Opus 4.6 + GPT-5.4) are significantly harsher than mid-tier judges, producing more discriminating scores
+- **2-2-2 provider balance** (2 roles per provider) maximises parallelism and cost distribution
+
+Combination pipelines (Mesh+Verify, GSV, Corp Hierarchy) and corporate hierarchy variants are being benchmarked with all 29 pipelines.
 
 ## License
 
