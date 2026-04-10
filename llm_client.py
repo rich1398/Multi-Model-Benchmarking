@@ -102,6 +102,9 @@ class LLMClient:
             "gemini": asyncio.Semaphore(1),
         }
         self.subscription_mode: bool = getattr(config, "subscription_mode", False)
+        self.hybrid_mode: bool = False
+        # Track providers where API credits are exhausted (hybrid mode fallback)
+        self._api_exhausted: set[str] = set()
 
     async def generate(
         self,
@@ -115,6 +118,10 @@ class LLMClient:
     ) -> LLMResponse:
         model = model or self._config.default_model
         provider = provider or resolve_provider(model)
+
+        # Hybrid mode: CLI primary, API as parallel fallback when CLI is busy
+        if self.hybrid_mode and provider in ("anthropic", "openai", "gemini"):
+            return await self._hybrid_generate(prompt, model, provider, temperature, system_prompt, max_tokens)
 
         # Subscription mode: redirect cloud providers to CLI
         # Each CLI gets its own semaphore (1 at a time per CLI)
@@ -812,6 +819,81 @@ class LLMClient:
             })
         errors = [str(c["reason"]) for c in checks if not c["ok"] and c["reason"]]
         return {"ok": not errors, "checks": checks, "errors": errors}
+
+    # ------------------------------------------------------------------
+    # Hybrid mode: CLI primary, API fallback when CLI busy
+    # ------------------------------------------------------------------
+
+    _BILLING_ERROR_PATTERNS = (
+        "balance is too low", "credit balance", "billing",
+        "quota exceeded", "rate limit", "insufficient",
+    )
+
+    async def _hybrid_generate(
+        self,
+        prompt: str,
+        model: str,
+        provider: str,
+        temperature: float | None,
+        system_prompt: str | None,
+        max_tokens: int | None,
+    ) -> LLMResponse:
+        """Try CLI first (non-blocking). If CLI busy, use API. If API fails, wait for CLI."""
+        sub_sem = self._sub_semaphores.get(provider, asyncio.Semaphore(1))
+
+        # Try to acquire CLI semaphore without blocking
+        cli_available = sub_sem._value > 0  # noqa: SLF001 — check if semaphore is free
+
+        if cli_available:
+            # CLI is free — use it (no API cost)
+            async with sub_sem:
+                return await self._dispatch_sub(prompt, model, provider, temperature, system_prompt)
+
+        # CLI is busy — try API if credits aren't exhausted for this provider
+        if provider not in self._api_exhausted:
+            try:
+                result = await self._dispatch_api(prompt, model, provider, temperature, system_prompt, max_tokens)
+                if result.ok:
+                    return result
+                # Check if this is a billing/credit error
+                error_lower = (result.error or "").lower()
+                if any(p in error_lower for p in self._BILLING_ERROR_PATTERNS):
+                    self._api_exhausted.add(provider)
+                    # Fall through to CLI wait
+                else:
+                    return result  # Non-billing error, return as-is
+            except Exception:
+                pass  # API failed entirely, fall through to CLI wait
+
+        # API exhausted or failed — wait for CLI (slower but free)
+        async with sub_sem:
+            return await self._dispatch_sub(prompt, model, provider, temperature, system_prompt)
+
+    async def _dispatch_sub(
+        self, prompt: str, model: str, provider: str,
+        temperature: float | None, system_prompt: str | None,
+    ) -> LLMResponse:
+        """Dispatch to the correct subscription CLI provider."""
+        if provider == "anthropic":
+            return await self._call_claude_sub(prompt, model, temperature, system_prompt)
+        elif provider == "openai":
+            return await self._call_chatgpt_sub(prompt, model, temperature, system_prompt)
+        elif provider == "gemini":
+            return await self._call_gemini_sub(prompt, model, temperature, system_prompt)
+        return LLMResponse(ok=False, error=f"No subscription CLI for {provider}", model=model, provider=provider)
+
+    async def _dispatch_api(
+        self, prompt: str, model: str, provider: str,
+        temperature: float | None, system_prompt: str | None, max_tokens: int | None,
+    ) -> LLMResponse:
+        """Dispatch to the correct API provider."""
+        if provider == "anthropic":
+            return await self._call_anthropic(prompt, model, temperature, system_prompt, max_tokens)
+        elif provider == "openai":
+            return await self._call_openai(prompt, model, temperature, system_prompt)
+        elif provider == "gemini":
+            return await self._call_gemini(prompt, model, temperature, system_prompt, max_tokens)
+        return LLMResponse(ok=False, error=f"No API for {provider}", model=model, provider=provider)
 
     # ------------------------------------------------------------------
     # Subscription CLI providers (routes through paid subscriptions)

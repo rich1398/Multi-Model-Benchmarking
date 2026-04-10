@@ -355,6 +355,7 @@ async def api_run(request: Request):
 
     # Parse enhancement toggles
     subscription_mode = body.get("subscription_mode", False)
+    hybrid_mode = body.get("hybrid_mode", False)
     cot_enabled = body.get("cot_enabled", False)
     token_budget_enabled = body.get("token_budget_enabled", False) and not subscription_mode
     adaptive_temp_enabled = body.get("adaptive_temp_enabled", False) and not subscription_mode
@@ -364,6 +365,7 @@ async def api_run(request: Request):
     config = _get_config()
     client = _get_client()
     client.subscription_mode = subscription_mode
+    client.hybrid_mode = hybrid_mode
 
     # Cancel any still-running previous runs to free semaphores
     for old_id, old_event in list(_cancel_events.items()):

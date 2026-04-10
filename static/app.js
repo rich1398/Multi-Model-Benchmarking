@@ -312,17 +312,18 @@ function setupEventListeners() {
   // Provider mode toggle — disable incompatible enhancements in subscription mode
   document.querySelectorAll('input[name="provider-mode"]').forEach(radio => {
     radio.addEventListener('change', () => {
-      const isSub = document.querySelector('input[name="provider-mode"]:checked')?.value === 'subscription';
+      const mode = document.querySelector('input[name="provider-mode"]:checked')?.value;
+      const isCLIOnly = mode === 'subscription';
       const tokenBudget = document.getElementById('cb-token-budget');
       const adaptiveTemp = document.getElementById('cb-adaptive-temp');
-      tokenBudget.disabled = isSub;
-      adaptiveTemp.disabled = isSub;
-      if (isSub) {
+      tokenBudget.disabled = isCLIOnly;
+      adaptiveTemp.disabled = isCLIOnly;
+      if (isCLIOnly) {
         tokenBudget.checked = false;
         adaptiveTemp.checked = false;
       }
-      document.getElementById('toggle-token-budget').classList.toggle('disabled', isSub);
-      document.getElementById('toggle-adaptive-temp').classList.toggle('disabled', isSub);
+      document.getElementById('toggle-token-budget').classList.toggle('disabled', isCLIOnly);
+      document.getElementById('toggle-adaptive-temp').classList.toggle('disabled', isCLIOnly);
       updateHealthBanner();
     });
   });
@@ -384,6 +385,7 @@ async function startRun() {
     enabled_models: enabledModels,
     task_suite: taskSuite,
     subscription_mode: document.querySelector('input[name="provider-mode"]:checked')?.value === 'subscription',
+    hybrid_mode: document.querySelector('input[name="provider-mode"]:checked')?.value === 'hybrid',
     cot_enabled: document.getElementById('cb-cot')?.checked || false,
     token_budget_enabled: document.getElementById('cb-token-budget')?.checked || false,
     adaptive_temp_enabled: document.getElementById('cb-adaptive-temp')?.checked || false,

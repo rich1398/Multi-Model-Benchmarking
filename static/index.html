@@ -82,6 +82,11 @@
           <span class="hint">Uses API keys. Full control over temperature and token limits.</span>
         </label>
         <label class="radio-label">
+          <input type="radio" name="provider-mode" value="hybrid">
+          <span class="radio-text">Hybrid Mode</span>
+          <span class="hint">CLI primary ($0), API for parallel speedup (~30% API cost). Auto-fallback if API exhausted.</span>
+        </label>
+        <label class="radio-label">
           <input type="radio" name="provider-mode" value="subscription">
           <span class="radio-text">Subscription CLI Mode</span>
           <span class="hint">Uses paid subscriptions ($0 extra cost). No temperature/token control.</span>
