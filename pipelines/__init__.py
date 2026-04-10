@@ -105,5 +105,12 @@ def _register_defaults() -> None:
     except ImportError:
         pass
 
+    try:
+        from pipelines.hierarchy import ManagedTeamPipeline, CorpHierarchyPipeline
+        register_pipeline(ManagedTeamPipeline())
+        register_pipeline(CorpHierarchyPipeline())
+    except ImportError:
+        pass
+
 
 _register_defaults()
