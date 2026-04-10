@@ -50,17 +50,17 @@ def auto_assign_roles(
     model_b = distinct[1][0] if len(distinct) > 1 else model_a  # secondary (GPT)
     model_c = distinct[2][0] if len(distinct) > 2 else model_b  # tertiary (Gemini)
 
-    # Distribute roles evenly: 2 roles per provider when 3 cloud models available
-    # generator + arbiter = model_a (strongest, quality-critical)
-    # generator_alt + critic = model_b (different perspective, adversarial)
-    # synthesizer + reviewer = model_c (independent synthesis and review)
+    # Distribute roles evenly: 2 roles per provider, matched to strengths
+    # generator + synthesizer = model_a (Claude — strongest for generation and final assembly)
+    # generator_alt + arbiter = model_b (GPT — different perspective + final arbitration)
+    # critic + reviewer = model_c (Gemini — independent challenge, good at finding issues)
     role_models: dict[str, str] = {
         "generator": model_a,
         "generator_alt": model_b,
-        "critic": model_b,
-        "synthesizer": model_c,
+        "critic": model_c,
+        "synthesizer": model_a,
         "reviewer": model_c,
-        "arbiter": model_a,
+        "arbiter": model_b,
     }
 
     judge_models: list[dict[str, str]] = []
