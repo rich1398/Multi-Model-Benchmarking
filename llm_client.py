@@ -56,9 +56,9 @@ def _headless_env() -> dict[str, str]:
 
 def _sub_timeout(prompt: str) -> int:
     """Adaptive timeout for subscription CLI calls based on prompt length."""
-    base = 300  # 5 minutes minimum (thesis prompts need this)
-    extra = len(prompt) // 500 * 30  # +30s per ~500 chars of prompt
-    return min(base + extra, 900)  # cap at 15 minutes
+    base = 480  # 8 minutes minimum (Opus on thesis prompts needs this)
+    extra = len(prompt) // 500 * 60  # +60s per ~500 chars of prompt
+    return min(base + extra, 1200)  # cap at 20 minutes
 
 
 def _kill_tree(proc: subprocess.Popen) -> None:
@@ -838,8 +838,25 @@ class LLMClient:
         system_prompt: str | None,
         max_tokens: int | None,
     ) -> LLMResponse:
-        """Try CLI first (non-blocking). If CLI busy, use API. If API fails, wait for CLI."""
+        """Try CLI first (non-blocking). If CLI busy, use API. If API fails, wait for CLI.
+        For long prompts (>1000 chars), prefer API even if CLI is free — it's faster and more reliable."""
         sub_sem = self._sub_semaphores.get(provider, asyncio.Semaphore(1))
+        prompt_len = len(prompt) + len(system_prompt or "")
+        long_prompt = prompt_len > 1000
+
+        # For long/complex prompts, prefer API (faster, no subprocess overhead)
+        if long_prompt and provider not in self._api_exhausted:
+            try:
+                result = await self._dispatch_api(prompt, model, provider, temperature, system_prompt, max_tokens)
+                if result.ok:
+                    return result
+                error_lower = (result.error or "").lower()
+                if any(p in error_lower for p in self._BILLING_ERROR_PATTERNS):
+                    self._api_exhausted.add(provider)
+                else:
+                    return result
+            except Exception:
+                pass  # API failed, fall through to CLI
 
         # Try to acquire CLI semaphore without blocking
         cli_available = sub_sem._value > 0  # noqa: SLF001 — check if semaphore is free
