@@ -173,13 +173,13 @@ async def api_models():
         all_models.append({**m, "provider": "ollama"})
 
     cloud_catalog = {
-        "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini", "o3-mini"],
+        "openai": ["gpt-5.4", "gpt-5.4-mini", "gpt-4o", "gpt-4.1", "o3-mini"],
         "anthropic": [
+            "claude-opus-4-6",
             "claude-sonnet-4-20250514",
-            "claude-opus-4-1-20250805",
             "claude-haiku-3-5-20241022",
         ],
-        "gemini": ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
+        "gemini": ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
     }
     for provider, names in cloud_catalog.items():
         has_key = any(m.provider == provider and m.api_key for m in config.models)

@@ -2,23 +2,25 @@
 
 from __future__ import annotations
 
-# (input_$/1M_tokens, output_$/1M_tokens) — last updated 2025-06
+# (input_$/1M_tokens, output_$/1M_tokens) — last updated 2026-04
 PRICING: dict[str, dict[str, tuple[float, float]]] = {
     "anthropic": {
+        "claude-opus-4-6": (15.0, 75.0),
         "claude-sonnet-4-20250514": (3.0, 15.0),
         "claude-opus-4-1-20250805": (15.0, 75.0),
         "claude-haiku-3-5-20241022": (0.80, 4.0),
     },
     "openai": {
+        "gpt-5.4": (2.50, 10.0),
+        "gpt-5.4-mini": (0.15, 0.60),
         "gpt-4o": (2.50, 10.0),
         "gpt-4o-mini": (0.15, 0.60),
         "gpt-4.1": (2.0, 8.0),
-        "gpt-4.1-mini": (0.40, 1.60),
         "o3-mini": (1.10, 4.40),
     },
     "gemini": {
-        "gemini-2.5-flash": (0.15, 0.60),
         "gemini-2.5-pro": (1.25, 10.0),
+        "gemini-2.5-flash": (0.15, 0.60),
         "gemini-2.0-flash": (0.10, 0.40),
     },
     "ollama": {},

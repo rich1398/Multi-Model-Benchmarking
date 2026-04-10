@@ -4,9 +4,9 @@ const BENCHMARK_MODELS = [
   { provider: 'ollama',    model: 'llama3.2',                label: 'Llama 3.2',         badge: 'local' },
   { provider: 'ollama',    model: 'mistral',                 label: 'Mistral 7B',        badge: 'local' },
   { provider: 'ollama',    model: 'qwen3:8b',                label: 'Qwen3 8B',          badge: 'local' },
-  { provider: 'openai',    model: 'gpt-4o',                  label: 'GPT-4o',            badge: 'openai' },
-  { provider: 'anthropic', model: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4',   badge: 'anthropic' },
-  { provider: 'gemini',    model: 'gemini-2.5-flash',        label: 'Gemini 2.5 Flash',  badge: 'gemini' },
+  { provider: 'openai',    model: 'gpt-5.4',                 label: 'GPT-5.4',           badge: 'openai' },
+  { provider: 'anthropic', model: 'claude-opus-4-6',          label: 'Claude Opus 4.6',   badge: 'anthropic' },
+  { provider: 'gemini',    model: 'gemini-2.5-pro',          label: 'Gemini 2.5 Pro',    badge: 'gemini' },
 ];
 
 const state = {

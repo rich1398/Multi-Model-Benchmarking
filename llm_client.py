@@ -889,7 +889,7 @@ class LLMClient:
         claude_path = _resolve_cli("claude")
         if not claude_path:
             return LLMResponse(ok=False, error="claude CLI not found in PATH", model="Claude (sub)", provider="claude_sub")
-        cmd_args = ["-p", "-", "--model", "sonnet"]
+        cmd_args = ["-p", "-", "--model", "opus"]
         if system_prompt:
             cmd_args.extend(["--system-prompt", system_prompt])
         cmd, use_shell = _build_cmd(claude_path, cmd_args)
@@ -939,7 +939,7 @@ class LLMClient:
         if not gemini_path:
             return LLMResponse(ok=False, error="gemini CLI not found in PATH", model="Gemini (sub)", provider="gemini_sub")
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        cmd, use_shell = _build_cmd(gemini_path, ["-p", "-", "--model", "gemini-2.5-flash", "--approval-mode", "plan", "--output-format", "text"])
+        cmd, use_shell = _build_cmd(gemini_path, ["-p", "-", "--model", "gemini-2.5-pro", "--approval-mode", "plan", "--output-format", "text"])
         return await self._run_cli(cmd, full_prompt, _sub_timeout(full_prompt), "Gemini (sub)", "gemini_sub", _headless_env(), use_shell=use_shell)
 
     async def check_subscription_health(self) -> dict[str, Any]:
